@@ -352,12 +352,12 @@ $\stackover{[]\vdash t:\tau}{\T}\ \im\ t \in C\  \lor\  \exists t'.\ t\step t'$
 
 Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \begin{itemize}
-\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad 
-\noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
-  {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
+\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_1} \quad 
+\noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_2}}
+  {[] \vdash \sletin{x = t_1}{t_2} : \tau_2}$
 
-By IH on $\T_0$ either $t_2$ is canonnical or $t_1 \step t_1'$. If
-$t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
+By IH on $\T_1$ either $t_2$ is cannonical or $t_1 \step t_1'$. If
+$t_1 \step t_1'$ then $\T$ can step using S-Let1. If $t_1=c$
 then $\T$ can step using S-Let.
 
 \item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
