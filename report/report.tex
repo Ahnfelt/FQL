@@ -71,13 +71,12 @@
 \newcommand{\sset}[1]{\sLb #1 \sRb}
 \newcommand{\ssetc}[1]{\sset{#1}_{\!\!\!\surd}}
 
-\newcommand{\syneq}{\ \s{=^{syntax}\ }}
-
 \newcommand{\biim}{\Leftrightarrow}
 \newcommand{\im}{\Rightarrow}
 \newcommand{\imback}{\Leftarrow}
 \newcommand{\step}{\to}
 \newcommand{\stepsub}{\step^{sub}}
+\newcommand{\patbind}{\Rightarrow^{pat}}
 \newcommand{\rstep}{\gets}
 \newcommand{\steps}{\step^{*}}
 \newcommand{\bstep}{\step_\beta}
@@ -209,7 +208,7 @@ Application
 
 Generel recursion
 \[
-\rule{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
+\rule[S-Rec]{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
 \]
 
 
@@ -249,7 +248,7 @@ Equality
 Set
 
 \[\begin{array}{c}
-\rule[s-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
+\rule[S-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
 \quad\\\\
 \rule[S-SetC]{\forall i \in \dotset{1}{n}.\forall j \in \dotset{1}{i-1,i+1,\ldots,n}. c_i = c_j \step \sfalse}
 {\sset{c_1,\ldots,c_n} \step \ssetc{c_1,\ldots,c_n}}
@@ -312,16 +311,19 @@ Types in FQL are defined by
 \begin{eqnarray*}
 \tau ::= \sbool \pipe \sint \pipe \tau \times \tau \pipe \sseta \tau
 \end{eqnarray*}
-As discussed in section \ref{sec:semantics} we make sure there are no function types in the sets by defining equality types to be the types that can be contained in sets.
-These equality types are defined by\\
+As discussed in section \ref{sec:semantics} we have to make sure
+that every element in a set can be compared for equality. We define
+a class of types that support this by the judgement 
 \smbox{\tau \in EQ}
-\[
+\[\begin{array}{c}
 \rule[EQ-Int]{}{\sint \in EQ}\quad
-\rule[EQ-Bool]{}{\sbool \in EQ}\quad
+\rule[EQ-Bool]{}{\sbool \in EQ}\quad\\\\
 \rule[EQ-Set]{}{\sseta \tau \in EQ}\quad
 \rule[EQ-Pair]{\tau_1 \in EQ \quad \tau_2 \in EQ}{\tau_1 \times \tau_2 \in EQ}
-\]
-We can then define the type inference rules as
+\end{array}\]
+
+We can then define the typing judgement
+\smbox{\Gamma \vdash t : \tau}
 \[\begin{array}{c}
 \rule[T-True]{}{\Gamma \vdash \strue : \sbool}\quad
 \rule[T-False]{}{\Gamma \vdash \sfalse : \sbool}\quad
@@ -333,13 +335,24 @@ We can then define the type inference rules as
 \rule[T-Pair]{\Gamma\vdash t_1 : \tau_1 \quad \Gamma \vdash t_2 : \tau_2}{\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
 \end{array}
 \]
+
 Because every element of a set has to be an equality type we define the type inference rule for sets as
 \[
 \rule[T-Set]{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}
 \]
-To type check the $\lambda p.t$ expression the pattern $p$
+
+We extract the bindings and the accepted type from the
+pattern, by the judgement \smbox{p \patbind \angled{\tau,\Gamma}}
 \[
-\rule[T-Lam]{\Gamma_1\vdash p : \tau_1\Gamma_2 \quad \Gamma_1\Gamma_2\vdash t : \tau_2}{\Gamma_1\lambda p.t : \tau_1 \step \tau_2}
+\rule[TP-Var]{}{x \patbind \angled{\tau,\{x \mapsto \tau\}}}\quad
+\rule[TP-Pair]{p_1 \patbind \angled{\tau_1,\Gamma_1}\quad p_2 \patbind \angled{\tau_2,\Gamma_2}}
+{(p_1, p_2) \patbind \angled{\tau_1\times\tau_2,\Gamma_1\Gamma_2}}
+\]
+
+Which we can use in the rule for lambda expressions
+\[
+\rule[T-Lam]{p \patbind \angled{\tau_1,\Gamma_2} \quad \Gamma_1\Gamma_2\vdash t : \tau_2}
+{\Gamma_1 \vdash \lambda p.t : \tau_1 \step \tau_2}
 \]
 
 \subsection{Concrete syntax}
