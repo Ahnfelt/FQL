@@ -374,9 +374,28 @@ We get by lemma~\ref{lemma:equalityProgress}
 
 
 
-\begin{lemma}[Equality progress]
+\begin{lemma}[Equality progress] $ $
   \label{lemma:equalityProgress}
-  sadfsad 
+
+$[]\vdash c_1:\tau \quad \land \quad []\vdash c_2:\tau \quad \land \quad \tau \in EQ \quad \im \quad
+c_1 = c_2 \step \strue \quad \lor \quad c_1 = c_2 \step \sfalse$
+
+Proof: By induction on the structure of $c_1$ 
+\begin{itemize}
+\item Case $c_1 = n$ 
+
+Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ og S-EqNF to prove $c_1 = c_2 \step \sfalse$
+ 
+\item Case $c_1 = true$
+
+We must have $\tau = \sbool$ and $c_2 = \strue$ or $c_2 = \sfalse$ 
+\item Case $c_1 = false$
+\item Case $c_1 = (c_l, c_r)$
+\item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
+\item Case $c_1 = \lambda p.t$
+
+\end{itemize}
+  
 \end{lemma}
 
 
