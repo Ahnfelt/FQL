@@ -310,41 +310,36 @@ Generate pattern bindings
 \subsection{Type system}
 Types in FQL are defined by
 \begin{eqnarray*}
-\tau ::= \s{bool} \pipe \s{int} \pipe \tau \times \tau \pipe \s{set } \tau
+\tau ::= \s{bool} \pipe \s{int} \pipe \tau \times \tau \pipe \s{set }\ \tau
 \end{eqnarray*}
 As discussed in section \ref{sec:semantics} we make sure there are no function types in the sets by defining equality types to be the types that can be contained in sets.
 These equality types are defined by\\
 \smbox{\tau \in EQ}
 \[
-\rule{}{\sint \in EQ}
-\rule{}{\sbool \in EQ}
-\rule{}{\sseta \tau \in EQ}
-\rule{\tau_1 \in EQ \quad \tau_2 \in EQ}{\tau_1 \times \tau_2 \in EQ}
+\rule[EQ-Int]{}{\sint \in EQ}\quad
+\rule[EQ-Bool]{}{\sbool \in EQ}\quad
+\rule[EQ-Set]{}{\sseta \tau \in EQ}\quad
+\rule[EQ-Pair]{\tau_1 \in EQ \quad \tau_2 \in EQ}{\tau_1 \times \tau_2 \in EQ}
 \]
 We can then define the type inference rules as
-\[
-\rule{}{\Gamma \vdash \strue : \sbool}
-\rule{}{\Gamma \vdash \sfalse : \sbool}
-\rule{}{\Gamma \vdash \sn : \sint}
-\rule{}{\Gamma\vdash \strue : \sbool}
-\rule{}{\Gamma\vdash \sfalse : \sbool}
-\rule{}{\Gamma\vdash \sn : \sint}
+\[\begin{array}{c}
+\rule[T-True]{}{\Gamma \vdash \strue : \sbool}\quad
+\rule[T-False]{}{\Gamma \vdash \sfalse : \sbool}\quad
+\rule[T-Int]{}{\Gamma \vdash \sn : \sint}
+\\\\
+\rule[T-If]{\Gamma\vdash t_1 : \sbool \quad \Gamma\vdash t_2 : \tau \quad \Gamma\vdash t_3 : \tau}{\Gamma\vdash \sif t_1 \sthen t_2 \selse t_3 : \tau}\quad
+\rule[T-Plus]{\Gamma\vdash t_1 : \sint \quad \Gamma\vdash t_2 : \sint}{\Gamma\vdash t_1 + t_2 : \sint}\\\\
+\rule[T-Eq]{t_1 \in EQ \quad t_2 \in EQ}{\Gamma\vdash t_1 = t_2 : \sbool}\quad
+\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1 \quad \Gamma \vdash t_2 : \tau_2}{\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
+\end{array}
 \]
-\[
-\rule{\Gamma\vdash t_1 : \sbool \quad \Gamma\vdash t_2 : \tau \quad \Gamma\vdash t_3 : \tau}{\Gamma\vdash \sif t_1 \sthen t_2 \selse t_3 : \tau}
-\rule{\Gamma\vdash t_1 : \sint \quad \Gamma\vdash t_2 : \sint}{\Gamma\vdash t_1 + t_2 : \sint}
-\rule{???}{\Gamma\vdash t_1 = t_2 : \sbool}
-\]
-\[
-\rule{\Gamma\vdash t_1 : \tau_1 \quad \Gamma \vdash t_2 : \tau_2}{\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
- \]
 Because every element of a set has to be an equality type we define the type inference rule for sets as
 \[
-\rule{\forall_{i\in 1..n}\Gamma\vdash t_1 : \tau \quad \tau \in EQ}{\Gamma\vdash\sLb t_1..t_n\sRb : \sseta \tau}
+\rule[T-Set]{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}
 \]
 To type check the $\lambda p.t$ expression the pattern $p$
 \[
-%\rule{\Gamma_1\vdash p : \tau_1\Gamma_2 \quad \Gamma_1\Gamma_2\vdash t : \tau_2}{\Gamma_1\lambda p.t : \tau_1 \step \tau_2}
+\rule[T-Lam]{\Gamma_1\vdash p : \tau_1\Gamma_2 \quad \Gamma_1\Gamma_2\vdash t : \tau_2}{\Gamma_1\lambda p.t : \tau_1 \step \tau_2}
 \]
 
 \subsection{Concrete syntax}
