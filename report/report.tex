@@ -73,6 +73,7 @@
 
 \newcommand{\biim}{\Leftrightarrow}
 \newcommand{\im}{\Rightarrow}
+\newcommand{\bim}{\Leftarrow}
 \newcommand{\imback}{\Leftarrow}
 \newcommand{\step}{\to}
 \newcommand{\stepsub}{\step^{sub}}
@@ -87,12 +88,16 @@
 \newcommand{\dotset}[2]{\{#1,\ldots,#2\}}
 \newcommand{\angled}[1]{\langle #1\rangle}
 
+\newcommand{\te}[1]{[#1]\vdash}
+\newcommand{\tge}[1]{\Gamma[#1]\vdash}
+\newcommand{\T}{\mathcal{T}}
 \newcommand{\E}{\mathcal{E}}
 \renewcommand{\S}{\mathcal{S}}
 \newcommand{\sbig}[3]{\sLa #1 , #2 \sRa\downarrow #3}
 \newcommand{\ssmall}[3]{#1 \vdash #2 \step #3}
 \newcommand{\ssmalls}[3]{#1 \vdash #2 \steps #3}
 \newcommand{\noteover}[2]{\begin{array}{cc}{_{#2}}\\#1\end{array}}
+\newcommand{\stackover}[2]{\stackrel{{#2}}{#1}}
 \renewcommand{\rule}[3][]{\ \mbox{\textsc{#1 }}\dfrac{#2}{#3}\ }
 \newcommand{\smbox}[1]{
   $\begin{array}{|c|}
@@ -106,6 +111,8 @@
 
 \newcommand{\sugar}[2]{\langle#2\rangle_{\mathcal{#1}}}
 \newcommand{\sug}[1]{\sugar{E}{#1}}
+
+\newtheorem{lemma}{Lemma}[section]
 
 \title{FQL - A functional query language}
 \date{August 2009}
@@ -142,29 +149,9 @@ p & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe (t_1, t_2) \pipe
 As discussed in section \ref{sec:semantics} we need a subset of terms that are canonical. These are defined by $c$
 \begin{eqnarray*}
 c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
-p.t \pipe \sset{c^{,*}}
+p.t \pipe \ssetc{c_1,\ldots,c_n}
 \end{eqnarray*}
 
-We define the syntax for equality for the primitives as
-\[\begin{array}{l}
-\rule{}{\strue \syneq \sfalse}\quad
-\rule{}{\sfalse \syneq \strue}\quad
-\rule{}{\sn_1 \syneq \sn_2}\quad \\\\
-\end{array}\]
-And tuples as
-\[\begin{array}{l}
-\rule{t_1 \syneq t_1'\quad t_2 \syneq t_2'}{(t_1, t_2) \syneq (t_1', t_2')}\quad
-\end{array}\]
-
-We define canonical forms as a syntactic property as follows:
-\[\begin{array}{l}
-\rule{}{\sn \in C}\quad
-\rule{}{\strue \in C}\quad
-\rule{}{\sfalse \in C}\quad
-\rule{t_1 \in C\quad t_2 \in C}{(t_1, t_2) \in C}\quad
-\rule{}{\lambda p.t \in C}\quad\\\\
-%\rule{\forall i \in \{1,\ldots,n\}.t_i \in C}{\sset{t_1,\ldots,t_n} \in C}\quad
-\end{array}\]
 
 \subsection{Semantics\label{sec:semantics}}
 %%Discuss why there are no function types in sets.
@@ -256,8 +243,9 @@ Set
 \rule[S-SetR]{c_1 = c_i \step \strue}
 {\sset{c_1,\ldots,c_n} \step \sset{c_2,\ldots,c_n}}(i \in \dotset{2}{n})
 \quad\\\\
-\rule[S-SetS]{\forall i \in \dotset{2}{n}. c_1 = c_i \step \sfalse}
-{\sset{c_1,\ldots,c_n} \step \sset{c_2,\ldots,c_n,c_1}}
+\rule[S-SetS]{\forall i \in \dotset{2}{n}. c_1 = c_i \step \sfalse
+\quad c_j = c_k \step \strue}
+{\sset{c_1,\ldots,c_n} \step \sset{c_2,\ldots,c_n,c_1}}(j,k \in \dotset{1}{n}, j\neq k)
 \quad\\\\
 \rule[S-SetIn1]{}{t_1\in t_2 \step t_1'\in t_2}
 \quad
@@ -270,12 +258,12 @@ Set
 \rule[S-SetU]{}{\ssetc{c_1,\ldots,c_m} \cup \ssetc{c_{m+1},\ldots,c_n} \step
 \{c_1,\ldots,c_m,c_{m+1},\ldots,c_n\}}
 \quad\\\\
-\rule[S-SetD]{c_1 = c'_j \step \strue}
+\rule[S-SetDT]{c_1 = c'_j \step \strue}
 {\ssetc{c_1,\ldots,c_n} \setminus \ssetc{c'_1,\ldots,c'_j,\ldots,c'_m} \step
   \sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_{j-1},c'_{j+1},\ldots,c'_m}
 }
 \quad\\\\
-\rule{\forall j \in \dotset{1}{m} c_1 = c'_j \step \sfalse}
+\rule[S-SetDF]{\forall j \in \dotset{1}{m} c_1 = c'_j \step \sfalse}
 {\ssetc{c_1,\ldots,c_n} \setminus \ssetc{c'_1,\ldots,c'_m} \step
   \sset{c_1} \cup (\sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_m})
 }
@@ -309,7 +297,7 @@ Generate pattern bindings
 \subsection{Type system}
 Types in FQL are defined by
 \begin{eqnarray*}
-\tau ::= \sbool \pipe \sint \pipe \tau \times \tau \pipe \sseta \tau
+\tau ::= \sbool \pipe \sint \pipe \tau \to \tau \pipe \tau \times \tau \pipe \sseta \tau
 \end{eqnarray*}
 As discussed in section \ref{sec:semantics} we have to make sure
 that every element in a set can be compared for equality. We define
@@ -354,6 +342,43 @@ Which we can use in the rule for lambda expressions
 \rule[T-Lam]{p \patbind \angled{\tau_1,\Gamma_2} \quad \Gamma_1\Gamma_2\vdash t : \tau_2}
 {\Gamma_1 \vdash \lambda p.t : \tau_1 \step \tau_2}
 \]
+
+
+\subsection{Proofs}
+
+
+\begin{lemma}[Progress] 
+\label{lemma:progress}
+$\stackover{[]\vdash t:\tau}{\T}\ \im\ t \in C\  \lor\  \exists t'.\ t\step t'$
+
+Proof: By induction on $\T$ of $[]\vdash t:\tau$.
+\begin{itemize}
+\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad 
+\noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
+  {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
+
+By IH on $\T_0$ either $t_2$ is canonnical or $t_1 \step t_1'$. If
+$t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
+then $\T$ can step using S-Let.
+
+\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
+
+$\forall i \in \dotset{1}{n}.$ By IH in $\T_i$ $t_i \in C$ ...
+
+We get by lemma~\ref{lemma:equalityProgress}
+
+\end{itemize}
+
+\end{lemma}
+
+
+
+
+\begin{lemma}[Equality progress]
+  \label{lemma:equalityProgress}
+  sadfsad 
+\end{lemma}
+
 
 \subsection{Concrete syntax}
 
