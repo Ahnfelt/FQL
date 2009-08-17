@@ -160,7 +160,7 @@ p.t \pipe \ssetc{c_1,\ldots,c_n}
 \\\\
 
 Step rules. Here the binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
-\[\begin{array}{l}
+\[\begin{array}{c}
 \rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad\\\\
 \rule[S-Step2]{t \step t'}{c \oplus t \step c \oplus t'}
 \end{array}
@@ -174,7 +174,7 @@ Plus
 
 Condition
 
-\[\begin{array}{l}
+\[\begin{array}{c}
 \rule[S-If1]{t_1 \step t_1'}{\sifthenelse{t_1}{t_2}{t_3} \step \sifthenelse{t_1'}{t_2}{t_3}}\\\\
 \rule[S-IfL]{}{\sifthenelse{\strue}{t_2}{t_3} \step t_2}\quad
 \rule[S-IfR]{}{\sifthenelse{\sfalse}{t_2}{t_3} \step t_3}
@@ -200,7 +200,7 @@ Generel recursion
 
 
 Equality
-\[\begin{array}{l}
+\[\begin{array}{c}
 \rule[S-EqTT]{}{\strue = \strue \step \strue}
 \quad
 \rule[S-EqFF]{}{\sfalse = \sfalse \step \strue}
@@ -388,9 +388,16 @@ Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\str
  
 \item Case $c_1 = true$
 
-We must have $\tau = \sbool$ and $c_2 = \strue$ or $c_2 = \sfalse$ 
+We must have $\tau = \sbool$ and $c_2 = \strue$ or $c_2 = \sfalse$. Rule S-EqTT or S-EqTF can now be used to prove our goal.
+
 \item Case $c_1 = false$
-\item Case $c_1 = (c_l, c_r)$
+
+Similar to above.
+
+\item Case $c_1 = (c_1^l, c_l^r)$
+
+$\tau$ must be equal $(\tau_l, \tau_r)$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. 
+
 \item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
 \item Case $c_1 = \lambda p.t$
 
