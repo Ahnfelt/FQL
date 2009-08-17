@@ -1,0 +1,429 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[toc,page]{appendix}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{color}
+\usepackage{array}
+\usepackage{lscape}
+\usepackage{calc}
+\usepackage{hhline}
+\usepackage{pslatex}
+\usepackage{verbatim}
+\usepackage{proof}
+\usepackage[top=3cm, bottom=3cm, left=3.5cm, right=3.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\hyphenation{hvor}
+
+% Messy redefinition of caption font -
+\newcommand{\captionfonts}{\small}
+\makeatletter  % Allow the use of @ in command names
+\long\def\@makecaption#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{{\captionfonts #1: #2}}%
+  \ifdim \wd\@tempboxa >\hsize
+    {\captionfonts #1: #2\par}
+  \else
+    \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi
+  \vskip\belowcaptionskip}
+\makeatother   % Cancel the effect of \makeatletter
+
+\newcommand{\buzz}[1]{{\sl #1}}
+\newcommand{\code}[1]{{\tt #1}}
+
+\newcommand{\lsb}{[\![}
+\newcommand{\rsb}{]\!]}
+\newcommand{\pipe}{\ | \ }
+
+\newcommand{\s}[1]{\mathtt{#1}}
+\newcommand{\sn}{\overline{n}}
+\newcommand{\sx}{\s{n}}
+\newcommand{\sLp}{\s{(}}
+\newcommand{\sRp}{\s{)}}
+\newcommand{\sLb}{\s{\{}}
+\newcommand{\sRb}{\s{\}}}
+\newcommand{\sbool}{\s{bool\ }}
+\newcommand{\sint}{\s{int\ }}
+\newcommand{\sseta}{\s{set\ }}
+\newcommand{\sLa}{\s{\langle}}
+\newcommand{\sRa}{\s{\rangle}}
+\newcommand{\swhile}{\s{\ while\ }}
+\newcommand{\sif}{\s{if\ }}
+\newcommand{\sthen}{\s{\ then\ }}
+\newcommand{\selse}{\s{\ else\ }}
+\newcommand{\sifthenelse}[3]{\sif #1 \sthen #2 \selse #3}
+\newcommand{\srepeat}{\s{\ repeat\ }}
+\newcommand{\suntil}{\s{\ until\ }}
+\newcommand{\scase}{\s{\ case\ }}
+\newcommand{\sof}{\s{\ of\ }}
+\newcommand{\slet}{\s{\ let\ }}
+\newcommand{\sletin}[2]{\s{let\ } #1 \s{\ in\ } #2}
+\newcommand{\srec}{\s{rec\ }}
+\newcommand{\sskip}{\s{skip}}
+\newcommand{\strue}{\s{true}}
+\newcommand{\sfalse}{\s{false}}
+\newcommand{\seq}{\s{=\ }}
+\newcommand{\sfn}{\s{fn}\ }
+\newcommand{\fst}[1]{\ \s{fst}(#1)}
+\newcommand{\snd}[1]{\ \s{snd}(#1)}
+\newcommand{\sset}[1]{\sLb #1 \sRb}
+\newcommand{\ssetc}[1]{\sset{#1}_{\!\!\!\surd}}
+
+\newcommand{\syneq}{\ \s{=^{syntax}\ }}
+
+\newcommand{\biim}{\Leftrightarrow}
+\newcommand{\im}{\Rightarrow}
+\newcommand{\imback}{\Leftarrow}
+\newcommand{\step}{\to}
+\newcommand{\stepsub}{\step^{sub}}
+\newcommand{\rstep}{\gets}
+\newcommand{\steps}{\step^{*}}
+\newcommand{\bstep}{\step_\beta}
+\newcommand{\bsteps}{\steps_\beta}
+\newcommand{\rbstep}{\ _\beta\!\gets}
+\newcommand{\beq}{\leftrightarrow_\beta}
+\newcommand{\bneq}{\nleftrightarrow_\beta}
+\newcommand{\dotset}[2]{\{#1,\ldots,#2\}}
+\newcommand{\angled}[1]{\langle #1\rangle}
+
+
+\newcommand{\E}{\mathcal{E}}
+\renewcommand{\S}{\mathcal{S}}
+\newcommand{\sbig}[3]{\sLa #1 , #2 \sRa\downarrow #3}
+\newcommand{\ssmall}[3]{#1 \vdash #2 \step #3}
+\newcommand{\ssmalls}[3]{#1 \vdash #2 \steps #3}
+\newcommand{\noteover}[2]{\begin{array}{cc}{_{#2}}\\#1\end{array}}
+\renewcommand{\rule}[3][]{\ \mbox{\textsc{#1 }}\dfrac{#2}{#3}\ }
+\newcommand{\smbox}[1]{
+  $\begin{array}{|c|}
+    \hline
+    #1 \\
+    \hline
+  \end{array}$
+}
+
+\newcommand{\estep}{\stackrel{\epsilon}{\to}}
+
+\newcommand{\sugar}[2]{\langle#2\rangle_{\mathcal{#1}}}
+\newcommand{\sug}[1]{\sugar{E}{#1}}
+
+\title{FQL - A functional query language}
+\date{August 2009}
+
+\author{Joakim Ahnfelt-Rønne \and Mikkel Jønsson Thomsen \and Michael Werk}
+
+\begin{document}
+\parindent=0pt
+\parskip=8pt plus 2pt minus 4pt
+\maketitle
+
+%blah blah blah
+A task has been assigned by an ERP systems vendor to formulate a language to query the data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and will provide type safety in queries by using a static type system. The language is to be integrated with the existing ERP host language, have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions.
+
+%\subsection{Requirements}
+
+\section{FQL}
+In this section we present the FQL, a functional query language for relational databases. We will first go through the syntax of the language, then we will design semantic rules and finally design a type system.
+
+\subsection{Syntax}
+The syntax of FQL consists of \emph{terms}, \emph{patterns} and \emph{canonical forms of terms}. The terms will be defined by $t$:
+\begin{eqnarray*}
+t & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe t_1 + t_2 \pipe t_1
+= t_2 \pipe \sifthenelse{t_1}{t_2}{t_3} \\
+& & \pipe (t_1,
+t_2) \pipe \lambda p.t \pipe t_1 t_2 \pipe \sletin{x \seq t_1}{t_2}
+\pipe \srec x.t \pipe \sset{t^{,*}} \pipe t_1 \cup t_2
+\end{eqnarray*}
+Where the patterns $p$ are defined by
+\begin{eqnarray*}
+p & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe (t_1, t_2) \pipe
+\sset{} \pipe \sset{p} \pipe p \cup p
+\end{eqnarray*}
+As discussed in section \ref{sec:semantics} we need a subset of terms that are canonical. These are defined by $c$
+\begin{eqnarray*}
+c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
+p.t \pipe \sset{c^{,*}}
+\end{eqnarray*}
+
+We define the syntax for equality for the primitives as
+\[\begin{array}{l}
+\rule{}{\strue \syneq \sfalse}\quad
+\rule{}{\sfalse \syneq \strue}\quad
+\rule{}{\sn_1 \syneq \sn_2}\quad \\\\
+\end{array}\]
+And tuples as
+\[\begin{array}{l}
+\rule{t_1 \syneq t_1'\quad t_2 \syneq t_2'}{(t_1, t_2) \syneq (t_1', t_2')}\quad
+\end{array}\]
+
+We define canonical forms as a syntactic property as follows:
+\[\begin{array}{l}
+\rule{}{\sn \in C}\quad
+\rule{}{\strue \in C}\quad
+\rule{}{\sfalse \in C}\quad
+\rule{t_1 \in C\quad t_2 \in C}{(t_1, t_2) \in C}\quad
+\rule{}{\lambda p.t \in C}\quad\\\\
+%\rule{\forall i \in \{1,\ldots,n\}.t_i \in C}{\sset{t_1,\ldots,t_n} \in C}\quad
+\end{array}\]
+
+\subsection{Semantics\label{sec:semantics}}
+%%Discuss why there are no function types in sets.
+
+\smbox{t \step t'}
+\\\\
+
+Step rules. Here the binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
+\[\begin{array}{l}
+\rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad\\\\
+\rule[S-Step2]{t \step t'}{c \oplus t \step c \oplus t'}
+\end{array}
+\]
+
+
+Plus
+\[
+\rule[S-Plus]{}{\overline{n_1} \s{\ +\ } \overline{n_2} \step \overline{n_1 + n_2}}
+\]
+
+Condition
+
+\[\begin{array}{l}
+\rule[S-If1]{t_1 \step t_1'}{\sifthenelse{t_1}{t_2}{t_3} \step \sifthenelse{t_1'}{t_2}{t_3}}\\\\
+\rule[S-IfL]{}{\sifthenelse{\strue}{t_2}{t_3} \step t_2}\quad
+\rule[S-IfR]{}{\sifthenelse{\sfalse}{t_2}{t_3} \step t_3}
+\end{array}\]
+
+Let
+\[
+\rule[S-Let1]{t_1 \step t_1'}
+  {\sletin{x=t_1}{t_2} \step \sletin{x=t_1'}{t_2}}\quad
+\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}
+\]
+
+
+Application
+\[
+\rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
+\]
+
+Generel recursion
+\[
+\rule{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
+\]
+
+
+Equality
+\[\begin{array}{l}
+\rule[S-EqTT]{}{\strue = \strue \step \strue}
+\quad
+\rule[S-EqFF]{}{\sfalse = \sfalse \step \strue}
+\quad\\\\
+\rule[S-EqFT]{}{\sfalse = \strue \step \sfalse}
+\quad
+\rule[S-EqTF]{}{\strue = \sfalse \step \sfalse}
+\quad\\\\
+\rule[S-EqNT]{}{\overline{n} = \overline{n} \step \strue}
+\quad
+\rule[S-EqNF]{}{\overline{n_1} = \overline{n_2} \step \sfalse} (n_1 \neq n_2)
+\quad\\\\
+\rule[S-EqTupT]{c_1 = c_1' \step \strue \quad c_2 = c_2' \step \strue}
+  {(c_1, c_2) = (c_1', c_2') \step \strue}
+\quad\\\\
+\rule[S-EqTupLF]{c_1 = c_1' \step \sfalse}
+  {(c_1, c_2) = (c_1', c_2') \step \sfalse}
+\quad
+\rule[S-EqTupRF]{c_2 = c_2' \step \sfalse}
+  {(c_1, c_2) = (c_1', c_2') \step \sfalse}
+\quad\\\\
+\rule[S-EqSetT]{\forall i \in \{1,\ldots,n\}. c_i \in  \ssetc{c'_1,\ldots,c'_n} \step \strue}
+  {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \strue}
+\quad\\\\
+\rule[S-EqSetLF]{}{\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_m} \step \sfalse}(n \neq m)
+\quad\\\\
+\rule[S-EqSetF]{c_i \in \ssetc{c'_1,\ldots,c'_n} \step \sfalse}
+  {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
+
+\end{array}\]
+
+Set
+
+\[\begin{array}{c}
+\rule[s-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
+\quad\\\\
+\rule[S-SetC]{\forall i \in \dotset{1}{n}.\forall j \in \dotset{1}{i-1,i+1,\ldots,n}. c_i = c_j \step \sfalse}
+{\sset{c_1,\ldots,c_n} \step \ssetc{c_1,\ldots,c_n}}
+\quad\\\\
+\rule[S-SetR]{c_1 = c_i \step \strue}
+{\sset{c_1,\ldots,c_n} \step \sset{c_2,\ldots,c_n}}(i \in \dotset{2}{n})
+\quad\\\\
+\rule[S-SetS]{\forall i \in \dotset{2}{n}. c_1 = c_i \step \sfalse}
+{\sset{c_1,\ldots,c_n} \step \sset{c_2,\ldots,c_n,c_1}}
+\quad\\\\
+\rule[S-SetIn1]{}{t_1\in t_2 \step t_1'\in t_2}
+\quad
+\rule[S-SetIn2]{}{c\in t \step c\in t'}
+\quad\\\\
+\rule[S-SetInT]{c=c_i \step \strue}{c\in \ssetc{c_1,\ldots,c_n} \step \strue}(i \in \dotset{1}{n})
+\quad
+\rule[S-SetInF]{\forall i\in\{1,\ldots,n\}. c=c_i \step \sfalse}{c_m \in \ssetc{c_1,\ldots,c_n} \step \sfalse}
+\quad\\\\
+\rule[S-SetU]{}{\ssetc{c_1,\ldots,c_m} \cup \ssetc{c_{m+1},\ldots,c_n} \step
+\{c_1,\ldots,c_m,c_{m+1},\ldots,c_n\}}
+\quad\\\\
+\rule[S-SetD]{c_1 = c'_j \step \strue}
+{\ssetc{c_1,\ldots,c_n} \setminus \ssetc{c'_1,\ldots,c'_j,\ldots,c'_m} \step
+  \sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_{j-1},c'_{j+1},\ldots,c'_m}
+}
+\quad\\\\
+\rule{\forall j \in \dotset{1}{m} c_1 = c'_j \step \sfalse}
+{\ssetc{c_1,\ldots,c_n} \setminus \ssetc{c'_1,\ldots,c'_m} \step
+  \sset{c_1} \cup (\sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_m})
+}
+\quad\\\\
+\rule[S-SetDE]{}{\ssetc{} \setminus c \step \sset{}}
+% This rule is not deterministec
+%\rule{c_i = c'_j \step \strue}
+%{\ssetc{c_1,\ldots,c_i,\ldots,c_m} \setminus \ssetc{c'_1,\ldots,c'_j,\ldots,c'_n} \step
+%  \ssetc{c_1,\ldots,c_{i-1},c_{i+1},\ldots,c_m} \setminus \ssetc{c'_1,\ldots,c'_{j-1},c'_{j+1},\ldots,c'_n}
+%}
+% No longer required
+%\quad\\\\
+%\rule{\forall j \in \dotset{1}{n}. \forall i \in \dotset{1}{m}.   c_i = c'_j \step \sfalse}
+%{\ssetc{c_1,\ldots,c_m} \setminus \ssetc{c'_1,\ldots,c'_n} \step
+%  \ssetc{c_1,\ldots,c_m}
+%}
+\quad
+\rule[S-SetI]{}{c_1 \cap c_2 \step (c_1 \cup c_2) \setminus ((c_1 \setminus c_2) \cup (c_2 \setminus c_1))}
+\end{array}\]
+
+
+Generate pattern bindings
+
+\smbox{\angled{p,c} \stepsub S}
+\[
+\rule[SP-Var]{}{\angled{x,c} \stepsub [x\mapsto c]}\quad
+\rule[SP-Pair]{\angled{p_1, c_1} \stepsub S_1 \quad \angled{p_2, c_2} \stepsub S_2}
+{\angled{(p_1,p_2), (c_1, c_2)} \stepsub S_1S_2}
+\]
+
+\subsection{Type system}
+Types in FQL are defined by
+\begin{eqnarray*}
+\tau ::= \s{bool} \pipe \s{int} \pipe \tau \times \tau \pipe \s{set } \tau
+\end{eqnarray*}
+As discussed in section \ref{sec:semantics} we make sure there are no function types in the sets by defining equality types to be the types that can be contained in sets.
+These equality types are defined by\\
+\smbox{\tau \in EQ}
+\[
+\rule{}{\sint \in EQ}
+\rule{}{\sbool \in EQ}
+\rule{}{\sseta \tau \in EQ}
+\rule{\tau_1 \in EQ \quad \tau_2 \in EQ}{\tau_1 \times \tau_2 \in EQ}
+\]
+We can then define the type inference rules as
+\[
+\rule{}{\Gamma \vdash \strue : \sbool}
+\rule{}{\Gamma \vdash \sfalse : \sbool}
+\rule{}{\Gamma \vdash \sn : \sint}
+\rule{}{\Gamma\vdash \strue : \sbool}
+\rule{}{\Gamma\vdash \sfalse : \sbool}
+\rule{}{\Gamma\vdash \sn : \sint}
+\]
+\[
+\rule{\Gamma\vdash t_1 : \sbool \quad \Gamma\vdash t_2 : \tau \quad \Gamma\vdash t_3 : \tau}{\Gamma\vdash \sif t_1 \sthen t_2 \selse t_3 : \tau}
+\rule{\Gamma\vdash t_1 : \sint \quad \Gamma\vdash t_2 : \sint}{\Gamma\vdash t_1 + t_2 : \sint}
+\rule{???}{\Gamma\vdash t_1 = t_2 : \sbool}
+\]
+\[
+\rule{\Gamma\vdash t_1 : \tau_1 \quad \Gamma \vdash t_2 : \tau_2}{\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
+ \]
+Because every element of a set has to be an equality type we define the type inference rule for sets as
+\[
+\rule{\forall_{i\in 1..n}\Gamma\vdash t_1 : \tau \quad \tau \in EQ}{\Gamma\vdash\sLb t_1..t_n\sRb : \sseta \tau}
+\]
+To type check the $\lambda p.t$ expression the pattern $p$
+\[
+%\rule{\Gamma_1\vdash p : \tau_1\Gamma_2 \quad \Gamma_1\Gamma_2\vdash t : \tau_2}{\Gamma_1\lambda p.t : \tau_1 \step \tau_2}
+\]
+
+\subsection{Concrete syntax}
+
+The concrete syntax for set comprehensions is sketched here as $s$:
+
+\begin{eqnarray*}
+s & ::= & \{ t : f \pipe c\} \pipe \{ t : f \}\\
+f & ::= & p \s{\ in\ } t, f \pipe p \s{\ in\ } t\\
+c & ::= & t, c \pipe t \\
+\end{eqnarray*}
+
+Note that p is a pattern and t is a term. The rules for translating
+the concrete syntax to abstract syntax is sketched here as
+$\sug{t}$:
+
+\begin{eqnarray*}
+\sug{\{t:f\}} & \Longrightarrow & \sug{\{t:f\ |\ \s{true}\}} \\
+\sug{\{t:f\ |\ c\}} & \Longrightarrow &
+\s{map\ }
+(\lambda \sugar{CP}{f}. [\![ t ]\!])\
+(\s{filter\ } (\lambda \sugar{CP}{f}. \sugar{MC}{c})\
+\sugar{CV}{f})
+\end{eqnarray*}
+\begin{eqnarray*}
+\sugar{CV}{p\s{\ in\ } t, f} & \Longrightarrow & \sug{t} \times \sugar{CV}{f} \\
+\sugar{CV}{p\s{\ in\ } t} & \Longrightarrow & \sug{t}
+\end{eqnarray*}
+\begin{eqnarray*}
+\sugar{CP}{p\s{\ in\ } t, f} & \Longrightarrow & (\sugar{P}{p}, \sugar{CP}{f}) \\
+\sugar{CP}{p\s{\ in\ } t} & \Longrightarrow & p
+\end{eqnarray*}
+\begin{eqnarray*}
+\sugar{MC}{t, c} & \Longrightarrow & \sug{t} \s{\ and\ } \sugar{MC}{c} \\
+\sugar{MC}{t} & \Longrightarrow & \sug{t}
+\end{eqnarray*}
+
+In summary, we take the cross product of the input sets, pass it
+through the well known filter function to apply the predicate,
+and map it with the output function. We generate one big pattern
+based on the patterns to the left of the input sets and use it as
+the pattern for the predicate and output functions, thus binding
+the values to the names as intended. An example of the concrete
+syntax is
+\begin{verbatim}
+{(name, amount) : (name, accountnr) in owners,
+                  (accountnr', amount) in accounts |
+                  accountnr = accountnr'}
+\end{verbatim}
+which is translated to the abstract syntax
+\begin{eqnarray*}
+&&\s{map\ } (\lambda ((name, accountnr), (accountnr', amount)). (name, amount))\\
+&&\quad(\s{filter\ } (\lambda ((name, accountnr), (accountnr', amount)). accountnr = accountnr')\\
+&&\quad(owners \times accounts))
+\end{eqnarray*}
+This may be expressed more succintly as
+\begin{verbatim}
+{(name, amount) : (name, accountnr) in owners,
+                  (accountnr, amount) in accounts}
+\end{verbatim}
+Note that $accountnr$ is used twice here. The intention is that
+both places in the pattern must match the same value
+simultaniously, and the resulting abstract syntax is the same as
+in the previous example. This can be implemented as syntactic sugar
+by keeping track of which variables have been used before in the
+set comprehension. In case a variable $x$ is encountered again in a
+pattern, replace that occurence with a fresh variable $x'$ and add
+the constraint $x = x'$ to
+the filter. For booleans, integers and other literals, they too can
+be relaced by a constraint $c = x'$ where $c$ is the literal and
+$x'$ is the fresh variable that replaced it in the pattern.
+
+\newpage
+\begin{appendices}
+\end{appendices}
+
+\newpage
+%\bibliography{cite}
+%\bibliographystyle{plain}
+\end{document}
+
