@@ -201,7 +201,15 @@ Let
 \]
 
 
-Application
+In order to extract the bindings from the pattern we define the
+judgement \smbox{\angled{p,c} \stepsub S}
+\[
+\rule[SP-Var]{}{\angled{x,c} \stepsub [x\mapsto c]}\quad
+\rule[SP-Pair]{\angled{p_1, c_1} \stepsub S_1 \quad \angled{p_2, c_2} \stepsub S_2}
+{\angled{(p_1,p_2), (c_1, c_2)} \stepsub S_1S_2}
+\]
+
+Then we can define the rule for application
 \[
 \rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
 \]
@@ -296,15 +304,6 @@ Set
 \rule[S-SetI]{}{c_1 \cap c_2 \step (c_1 \cup c_2) \setminus ((c_1 \setminus c_2) \cup (c_2 \setminus c_1))}
 \end{array}\]
 
-
-Generate pattern bindings
-
-\smbox{\angled{p,c} \stepsub S}
-\[
-\rule[SP-Var]{}{\angled{x,c} \stepsub [x\mapsto c]}\quad
-\rule[SP-Pair]{\angled{p_1, c_1} \stepsub S_1 \quad \angled{p_2, c_2} \stepsub S_2}
-{\angled{(p_1,p_2), (c_1, c_2)} \stepsub S_1S_2}
-\]
 
 \subsection{Type system}
 Types in FQL are defined by
