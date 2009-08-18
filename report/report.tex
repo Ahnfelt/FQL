@@ -298,6 +298,21 @@ Set
 \end{array}\]
 
 
+With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
+\[\begin{array}{l}
+\srec \  reduce.\lambda f.\lambda z.\lambda s.Pick \ s \\
+\quad Some (e,r) = reduce \ f \ (f \  z \  e) r\\
+\quad None = z
+\end{array}\]
+We can also define fixed point queries by generel recursion and set comprehension as:
+\[\begin{array}{l}
+\slet fix = \lambda V.\lambda E. \\
+\quad \slet f = \lambda v.\sLb y : (x,y) \in E \pipe x\in V \sRb . \\
+\quad\quad \slet fix2 = \lambda f.\srec fix'.\lambda s. \\
+\quad\quad\quad \sletin{e = f(s)}{\sif e \setminus s = {} \sthen S \selse fix' (e \cup s)} \\
+\ \quad\quad \s{in\ } fix2\  f\  V \\
+\end{array}\]
+
 \subsection{Type system}
 Types in FQL are defined by
 \begin{eqnarray*}
@@ -306,7 +321,7 @@ Types in FQL are defined by
 \end{eqnarray*}
 As discussed in section \ref{sec:semantics} we have to make sure
 that every element in a set can be compared for equality. We define
-a class of types that support this by the judgement 
+a class of types that support this by the judgement
 \smbox{\tau \in EQ}
 \[\begin{array}{c}
 \rule[EQ-Int]{}{\sint \in EQ}\quad
@@ -327,7 +342,7 @@ We can then define the typing judgement
 \rule[T-Eq]{\Gamma\vdash t_1 : \tau \quad \Gamma\vdash t_2 : \tau
 \quad \tau \in EQ}
 {\Gamma\vdash t_1 = t_2 : \sbool}\quad
-\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1 
+\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1
 \quad \Gamma \vdash t_2 : \tau_2}
 {\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
 \\\\
@@ -357,7 +372,7 @@ We can then define the typing judgement
 {\Gamma \vdash t_1 \in t_2 : \sbool}
 \\\\
 \rule[T-Pick]{\Gamma \vdash t_1 : \s{set}\ \tau_1
-\quad \Gamma[x_1 \mapsto \tau_1][x_2 \mapsto \s{set}\ \tau_1] 
+\quad \Gamma[x_1 \mapsto \tau_1][x_2 \mapsto \s{set}\ \tau_1]
 \vdash t_2 : \tau_2
 \quad \Gamma \vdash t_3 : \tau_2}
 {\Gamma\vdash \spick{t_1}{(x_1,x_2) = t_2}{t_3} : \tau_2}
@@ -391,28 +406,37 @@ Which we can use in the rule for lambda expressions
 
 We use $t \in C$ here to express that t is on cannonical form.
 
-\begin{lemma}[Progress] 
+\begin{lemma}[Progress]
 \label{lemma:progress}
 $\stackover{[]\vdash t:\tau}{\T}\ \im\ t \in C\  \lor\  \exists t'.\ t\step t'$
 \end{lemma}
 
 Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \begin{itemize}
+\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad
+\noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
+  {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
 
-\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ 
-\stackover{[]\vdash t_i : \tau}{\T_i} 
+By IH on $\T_0$ either $t_2$ is canonnical or $t_1 \step t_1'$. If
+$t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
+then $\T$ can step using S-Let.
+
+%\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
+
+\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\
+\stackover{[]\vdash t_i : \tau}{\T_i}
 \quad \stackover{\tau \in EQ}{\E}}
 {[]\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
 
-$\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either 
-$t_i \in C$ or $\exists t_i'. t_i \to t_i'$. 
+$\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either
+$t_i \in C$ or $\exists t_i'. t_i \to t_i'$.
 If $t_i \to t_i'$ for some i then we can step by S-Set1.
-Otherwise all $t_i$s are on cannonical form and we have two 
+Otherwise all $t_i$s are on cannonical form and we have two
 subcases.
 
-By cannonical form, lemma~\ref{lemma:equalityProgress}, 
+By cannonical form, lemma~\ref{lemma:equalityProgress},
 the $\T_i$s and $\E$ we know
-that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}. 
+that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}.
 c_i = c_j \to \strue \vee c_i = c_j \to \sfalse$. We will say that
 an element $c_i$ is unique in a set if for all other elements $j$
 it holds that $c_i = c_j \to \sfalse$.
@@ -422,16 +446,16 @@ unique, and we can use S-SetC, or at least one element is not
 unique. In the latter case, we can step with S-SetR if the first
 element is not unique, and S-SetS otherwise.
 
-\item Case $\T = \rule{\stackover{[]\vdash t_1 : \tau}{\T_1} 
-\quad \stackover{[]\vdash t_2 : \tau}{\T_2} 
+\item Case $\T = \rule{\stackover{[]\vdash t_1 : \tau}{\T_1}
+\quad \stackover{[]\vdash t_2 : \tau}{\T_2}
 \quad \stackover{\tau \in EQ}{\E}}
 {[]\vdash t_1 = t_2 : \sbool}$
 
-By IH on $\T_1$ and $\T_2$, either one of them can take a step, 
-which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$ 
+By IH on $\T_1$ and $\T_2$, either one of them can take a step,
+which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$
 are on cannonical form.
 
-By cannonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$, 
+By cannonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
 $\T_2$ and $\E$ we know that $t_1 = t_2$ steps to either $\strue$
 or $\sfalse$.
 
@@ -446,8 +470,8 @@ or $\sfalse$.
 
 \end{itemize}
 
-There are more cases, but 
-%they are fairly standard and 
+There are more cases, but
+%they are fairly standard and
 we omit them
 here for brevity.
 
@@ -461,12 +485,12 @@ $[]\vdash c_1:\tau \quad \land \quad []\vdash c_2:\tau \quad \land \quad \tau \i
 c_1 = c_2 \step \strue \quad \lor \quad c_1 = c_2 \step \sfalse$
 \end{lemma}
 
-Proof: By induction on the structure of $c_1$ 
+Proof: By induction on the structure of $c_1$
 \begin{itemize}
-\item Case $c_1 = n$ 
+\item Case $c_1 = n$
 
 Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ og S-EqNF to prove $c_1 = c_2 \step \sfalse$
- 
+
 \item Case $c_1 = true$
 
 We must have $\tau = \sbool$ and $c_2 = \strue$ or $c_2 = \sfalse$. Rule S-EqTT or S-EqTF can now be used to prove our goal.
@@ -477,19 +501,19 @@ Similar to above.
 
 \item Case $c_1 = (c_1^l, c_l^r)$
 
-$\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l \times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$ and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$ or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree rules S-EqTup? can be used to prove our goal. 
+$\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l \times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$ and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$ or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree rules S-EqTup? can be used to prove our goal.
 
 \item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
 
-$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct cannonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise. 
+$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct cannonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise.
 
 For all combinations of $c_i$ and $c'_j$ together with $\tau' \in C$ we may use IH to establish $c_i = c'_j \step \strue$ or $c_i = c'_j \step \sfalse$. These results can be used with one of the rules S-SetC, S-SetR or S-SetS to prove this case.
 
 \item Case $c_1 = \lambda p.t$
 
-This case is not possible. Since $\tau = \tau_1 \to \tau_2$ if not provable by the EQ-? rules. Is is therefor not possible that $c_1 = \lambda p.t$. 
+This case is not possible. Since $\tau = \tau_1 \to \tau_2$ if not provable by the EQ-? rules. Is is therefor not possible that $c_1 = \lambda p.t$.
 \end{itemize}
-  
+
 \begin{lemma}[Substitution] $ $
   \label{lemma:substitution}
 
@@ -499,7 +523,7 @@ $\stackover{\Gamma[x \mapsto \tau'] \vdash t: \tau}{\T} \quad \land \quad []\vda
 
 Proof: By induction on the structure of $\T$.
 %\begin{itemize}
-%\item Case $\T$ = 
+%\item Case $\T$ =
 %\end{itemize}
 
 
@@ -511,13 +535,13 @@ $\stackover{t \step t'}{\S} \quad \land \quad \stackover{[] \vdash t: \tau}{\T} 
 
 Proof: By induction on derivation $\S$.
 %\begin{itemize}
-%\item Case $\S$ = 
+%\item Case $\S$ =
 %\end{itemize}
 
 
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
-  
+
 \end{lemma}
 
 Proof:
