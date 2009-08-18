@@ -126,7 +126,7 @@
 \maketitle
 
 %blah blah blah
-A task has been assigned by an ERP systems vendor to formulate a language to query the data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and will provide type safety in queries by using a static type system. The language is to be integrated with the existing ERP host language, have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions.
+A task has been assigned by an ERP systems vendor to formulate a query language to extract the data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in queries by using a static type system. The language is to be integrated with the existing ERP host language, have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions.
 
 %\subsection{Requirements}
 
@@ -204,9 +204,9 @@ Rules for equality of terms is only defined for terms of canonical forms. The in
 \begin{enumerate}
 \item terms $\lambda p.t$ are included in the sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal, so either we would need some kind of identifier to determine equality or we need to define a static result of applying equality to functions i.e. true or false. The first solution will make similar functions appear unsimilar because they have different identifiers, thereby introducing the possibility of similar functions in a set and thereby conflicting with the mathematical definition of sets. The second solution have similar problems i.g. that if we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we again break the definition of the mathematical set.
     
-\item We define sets to contain terms of $c' ::= c \setminus \lambda p.t$ in which case we can define a \emph{canonical set} $\ssetc{c_1,\ldots,c_n}$ to only contain terms $c'$. We then define equality types to be 
+\item We define sets to contain terms $c'$ where $c' ::= c \setminus \lambda p.t$ in which case we can define a \emph{canonical set} $\ssetc{c_1,\ldots,c_n}$ to only contain terms $c'$. By doing this we put a narrow restriction on the set type in exchange of preserving the properties of a mathematical set.
 \end{enumerate}
-
+By choosing option two we define equality as:
 \[\begin{array}{c}
 \rule[S-EqTT]{}{\strue = \strue \step \strue}
 \quad
@@ -238,8 +238,7 @@ Rules for equality of terms is only defined for terms of canonical forms. The in
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
 \end{array}\]
 
-Set
-
+Rules for set
 \[\begin{array}{c}
 \rule[S-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
 \quad\\\\
