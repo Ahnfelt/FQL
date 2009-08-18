@@ -200,7 +200,13 @@ Then we can define the rule for application
 \rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
 \]
 
-We define the rules for equality to cover all the possible cases of construcs that can be used in a equality construct. The interesting rules are the rules for set. 
+Rules for equality of terms is only defined for terms of canonical forms. The interesting rules are the rules for the equality of sets. As sets are defined for all canonical terms $c$ we are able to have function terms $\lambda p.t$ in a set. If we define equality for sets, we either need to define equality for these terms or we need to exclude them from the sets. We then have two options:
+\begin{enumerate}
+\item terms $\lambda p.t$ are included in the sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal, so either we would need some kind of identifier to determine equality or we need to define a static result of applying equality to functions i.e. true or false. The first solution will make similar functions appear unsimilar because they have different identifiers, thereby introducing the possibility of similar functions in a set and thereby conflicting with the mathematical definition of sets. The second solution have similar problems i.g. that if we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we again break the definition of the mathematical set.
+    
+\item We define sets to contain terms of $c' ::= c \setminus \lambda p.t$ in which case we can define a \emph{canonical set} $\ssetc{c_1,\ldots,c_n}$ to only contain terms $c'$. We then define equality types to be 
+\end{enumerate}
+
 \[\begin{array}{c}
 \rule[S-EqTT]{}{\strue = \strue \step \strue}
 \quad
