@@ -155,42 +155,40 @@ p.t \pipe \ssetc{c_1,\ldots,c_n}
 
 
 \subsection{Semantics\label{sec:semantics}}
-%%Discuss why there are no function types in sets.
+We present the semantics of FQL as a small step semantic by the judgment: \smbox{t \step t'}
+\\
+The binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
 
-\smbox{t \step t'}
-\\\\
-
-Step rules. Here the binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
+Step rules.
 \[\begin{array}{c}
-\rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad\\\\
+\rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad
 \rule[S-Step2]{t \step t'}{c \oplus t \step c \oplus t'}
 \end{array}
 \]
 
-
-Plus
+Addition of the numerals 
 \[
 \rule[S-Plus]{}{\overline{n_1} \s{\ +\ } \overline{n_2} \step \overline{n_1 + n_2}}
 \]
 
-Condition
-
+Primitive conditions
 \[\begin{array}{c}
 \rule[S-If1]{t_1 \step t_1'}{\sifthenelse{t_1}{t_2}{t_3} \step \sifthenelse{t_1'}{t_2}{t_3}}\\\\
 \rule[S-IfL]{}{\sifthenelse{\strue}{t_2}{t_3} \step t_2}\quad
 \rule[S-IfR]{}{\sifthenelse{\sfalse}{t_2}{t_3} \step t_3}
 \end{array}\]
 
-Let
-\[
+We define the let construct and general recursion as:
+\[\begin{array}{c}
 \rule[S-Let1]{t_1 \step t_1'}
   {\sletin{x=t_1}{t_2} \step \sletin{x=t_1'}{t_2}}\quad
-\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}
-\]
+\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}\\
+\rule[S-Rec]{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
+\end{array}\]
 
 
-In order to extract the bindings from the pattern we define the
-judgement \smbox{\angled{p,c} \stepsub S}
+We use pattern matching to deconstruct the sets to resemble a query language.
+In order to extract the bindings from the patterns we define the judgement \smbox{\angled{p,c} \stepsub S}
 \[
 \rule[SP-Var]{}{\angled{x,c} \stepsub [x\mapsto c]}\quad
 \rule[SP-Pair]{\angled{p_1, c_1} \stepsub S_1 \quad \angled{p_2, c_2} \stepsub S_2}
@@ -202,13 +200,7 @@ Then we can define the rule for application
 \rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
 \]
 
-General recursion
-\[
-\rule[S-Rec]{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
-\]
-
-
-Equality
+We define the rules for equality to cover all the possible cases of construcs that can be used in a equality construct. The interesting rules are the rules for set. 
 \[\begin{array}{c}
 \rule[S-EqTT]{}{\strue = \strue \step \strue}
 \quad
@@ -238,7 +230,6 @@ Equality
 \quad\\\\
 \rule[S-EqSetF]{c_i \in \ssetc{c'_1,\ldots,c'_n} \step \sfalse}
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
-
 \end{array}\]
 
 Set
