@@ -301,7 +301,8 @@ Set
 \subsection{Type system}
 Types in FQL are defined by
 \begin{eqnarray*}
-\tau ::= \sbool \pipe \sint \pipe \tau \to \tau \pipe \tau \times \tau \pipe \sseta \tau
+\tau &::=& \sbool \pipe \sint \pipe \tau \to \tau \pipe \tau \times \tau \pipe \sseta \tau \pipe \alpha\\
+\sigma &::=& \forall \alpha. \sigma \pipe \tau
 \end{eqnarray*}
 As discussed in section \ref{sec:semantics} we have to make sure
 that every element in a set can be compared for equality. We define
@@ -315,7 +316,7 @@ a class of types that support this by the judgement
 \end{array}\]
 
 We can then define the typing judgement
-\smbox{\Gamma \vdash t : \tau}
+\smbox{\Gamma \vdash t : \sigma}
 \[\begin{array}{c}
 \rule[T-True]{}{\Gamma \vdash \strue : \sbool}\quad
 \rule[T-False]{}{\Gamma \vdash \sfalse : \sbool}\quad
@@ -334,9 +335,18 @@ We can then define the typing judgement
 \rule[T-Rec]{\Gamma[x \mapsto \tau] \vdash t : \tau}
 {\Gamma\vdash \srec x. t : \tau}
 \\\\
-\rule[T-Let]{\Gamma \vdash t_1 : \tau_1
-\quad \Gamma[x \mapsto \tau_1] \vdash t_2 : \tau_2}
-{\Gamma\vdash \sletin{x = t_1}{t_2} : \tau_2}
+\rule[T-Let]{\Gamma \vdash t_1 : \sigma
+\quad \Gamma[x \mapsto \sigma] \vdash t_2 : \tau}
+{\Gamma\vdash \sletin{x = t_1}{t_2} : \tau}
+\quad
+\rule[T-Var]{}{\Gamma[x \mapsto \sigma]\vdash x : \sigma}
+\\\\
+\rule[T-Gen]{\Gamma \vdash t : \sigma}
+{\Gamma \vdash t : \forall \alpha.\sigma}
+(\mbox{if $\alpha$ not free in $\Gamma$})
+\quad
+\rule[T-Inst]{\Gamma \vdash t : \forall \alpha.\sigma}
+{\Gamma \vdash t : \sigma[\tau / \alpha]}
 \\\\
 \rule[T-Union]{\Gamma\vdash t_1 : \s{set}\ \tau
 \quad \Gamma \vdash t_2 : \s{set}\ \tau}
