@@ -300,7 +300,7 @@ Types in FQL are defined by
 \end{eqnarray*}
 As discussed in section \ref{sec:semantics} we have to make sure
 that every element in a set can be compared for equality. We define
-a class of types that support this by the judgement 
+a class of types that support this by the judgement
 \smbox{\tau \in EQ}
 \[\begin{array}{c}
 \rule[EQ-Int]{}{\sint \in EQ}\quad
@@ -346,13 +346,13 @@ Which we can use in the rule for lambda expressions
 \subsection{Proofs}
 
 
-\begin{lemma}[Progress] 
+\begin{lemma}[Progress]
 \label{lemma:progress}
 $\stackover{[]\vdash t:\tau}{\T}\ \im\ t \in C\  \lor\  \exists t'.\ t\step t'$
 
 Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \begin{itemize}
-\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad 
+\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad
 \noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
   {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
 
@@ -375,7 +375,7 @@ We get by lemma~\ref{lemma:equalityProgress}
 
 \begin{lemma}[Equality progress]
   \label{lemma:equalityProgress}
-  sadfsad 
+  sadfsad
 \end{lemma}
 
 
