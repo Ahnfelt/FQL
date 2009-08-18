@@ -379,6 +379,7 @@ We get by lemma~\ref{lemma:equalityProgress}
 
 $[]\vdash c_1:\tau \quad \land \quad []\vdash c_2:\tau \quad \land \quad \tau \in EQ \quad \im \quad
 c_1 = c_2 \step \strue \quad \lor \quad c_1 = c_2 \step \sfalse$
+\end{lemma}
 
 Proof: By induction on the structure of $c_1$ 
 \begin{itemize}
@@ -396,15 +397,50 @@ Similar to above.
 
 \item Case $c_1 = (c_1^l, c_l^r)$
 
-$\tau$ must be equal $(\tau_l, \tau_r)$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. 
+$\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l \times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$ and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$ or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree rules S-EqTup? can be used to prove our goal. 
 
 \item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
+
+$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct cannonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise. 
+
+For all combinations of $c_i$ and $c'_j$ together with $\tau' \in C$ we may use IH to establish $c_i = c'_j \step \strue$ or $c_i = c'_j \step \sfalse$. These results can be used with one of the rules S-SetC, S-SetR or S-SetS to prove this case.
+
 \item Case $c_1 = \lambda p.t$
 
+This case is not possible. Since $\tau = \tau_1 \to \tau_2$ if not provable by the EQ-? rules. Is is therefor not possible that $c_1 = \lambda p.t$. 
 \end{itemize}
+  
+\begin{lemma}[Substitution] $ $
+  \label{lemma:substitution}
+
+$\stackover{\Gamma[x \mapsto \tau'] \vdash t: \tau}{\T} \quad \land \quad []\vdash t':\tau' \quad \im \quad
+\Gamma \vdash [t'/x]t : \tau$
+\end{lemma}
+
+Proof: By induction on the structure of $\T$.
+%\begin{itemize}
+%\item Case $\T$ = 
+%\end{itemize}
+
+
+\begin{lemma}[Subject reduction property, preservation] $ $
+  \label{lemma:preservation}
+
+$\stackover{t \step t'}{\S} \quad \land \quad \stackover{[] \vdash t: \tau}{\T} \quad \im \quad [] \vdash t' : \tau$
+\end{lemma}
+
+Proof: By induction on derivation $\S$.
+%\begin{itemize}
+%\item Case $\S$ = 
+%\end{itemize}
+
+
+\begin{lemma}[Principal types] $ $
+  \label{lemma:principalTypes}
   
 \end{lemma}
 
+Proof:
 
 \subsection{Concrete syntax}
 
