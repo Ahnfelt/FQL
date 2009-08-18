@@ -238,7 +238,10 @@ By choosing option two we define equality as:
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
 \end{array}\]
 
-Rules for set
+In the following we present the semantic rules for set terms. The rule S-SetC is used to construct a canonical set from a semi-canonical set by deterministicly reducing the set using rules S-SetR and S-SetS. We preserve the terministic property by the rule S-SetC. 
+
+We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set. As the sets are defined as mathematical sets, we do not provide any guarantees as to where the member is located in the set. Again, the terministic property is preserved. To provide a fejl-safe semantic for the pick rules, we define the rule by using an \emph{option}-like construction to make a syntax driven rule. 
+
 \[\begin{array}{c}
 \rule[S-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
 \quad\\\\
