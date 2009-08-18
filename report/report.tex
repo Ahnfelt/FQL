@@ -126,7 +126,7 @@
 \maketitle
 
 %blah blah blah
-A task has been assigned by an ERP systems vendor to formulate a language to query the data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and will provide type safety in queries by using a static type system. The language is to be integrated with the existing ERP host language, have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions.
+A task has been assigned by an ERP systems vendor to formulate a query language to extract the data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in queries by using a static type system. The language is to be integrated with the existing ERP host language, have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions.
 
 %\subsection{Requirements}
 
@@ -155,42 +155,40 @@ p.t \pipe \ssetc{c_1,\ldots,c_n}
 
 
 \subsection{Semantics\label{sec:semantics}}
-%%Discuss why there are no function types in sets.
+We present the semantics of FQL as a small step semantic by the judgment: \smbox{t \step t'}
+\\
+The binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
 
-\smbox{t \step t'}
-\\\\
-
-Step rules. Here the binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
+Step rules.
 \[\begin{array}{c}
-\rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad\\\\
+\rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad
 \rule[S-Step2]{t \step t'}{c \oplus t \step c \oplus t'}
 \end{array}
 \]
 
-
-Plus
+Addition of the numerals 
 \[
 \rule[S-Plus]{}{\overline{n_1} \s{\ +\ } \overline{n_2} \step \overline{n_1 + n_2}}
 \]
 
-Condition
-
+Primitive conditions
 \[\begin{array}{c}
 \rule[S-If1]{t_1 \step t_1'}{\sifthenelse{t_1}{t_2}{t_3} \step \sifthenelse{t_1'}{t_2}{t_3}}\\\\
 \rule[S-IfL]{}{\sifthenelse{\strue}{t_2}{t_3} \step t_2}\quad
 \rule[S-IfR]{}{\sifthenelse{\sfalse}{t_2}{t_3} \step t_3}
 \end{array}\]
 
-Let
-\[
+We define the let construct and general recursion as:
+\[\begin{array}{c}
 \rule[S-Let1]{t_1 \step t_1'}
   {\sletin{x=t_1}{t_2} \step \sletin{x=t_1'}{t_2}}\quad
-\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}
-\]
+\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}\\
+\rule[S-Rec]{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
+\end{array}\]
 
 
-In order to extract the bindings from the pattern we define the
-judgement \smbox{\angled{p,c} \stepsub S}
+We use pattern matching to deconstruct the sets to resemble a query language.
+In order to extract the bindings from the patterns we define the judgement \smbox{\angled{p,c} \stepsub S}
 \[
 \rule[SP-Var]{}{\angled{x,c} \stepsub [x\mapsto c]}\quad
 \rule[SP-Pair]{\angled{p_1, c_1} \stepsub S_1 \quad \angled{p_2, c_2} \stepsub S_2}
@@ -202,13 +200,13 @@ Then we can define the rule for application
 \rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
 \]
 
-General recursion
-\[
-\rule[S-Rec]{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
-\]
-
-
-Equality
+Rules for equality of terms is only defined for terms of canonical forms. The interesting rules are the rules for the equality of sets. As sets are defined for all canonical terms $c$ we are able to have function terms $\lambda p.t$ in a set. If we define equality for sets, we either need to define equality for these terms or we need to exclude them from the sets. We then have two options:
+\begin{enumerate}
+\item terms $\lambda p.t$ are included in the sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal, so either we would need some kind of identifier to determine equality or we need to define a static result of applying equality to functions i.e. true or false. The first solution will make similar functions appear unsimilar because they have different identifiers, thereby introducing the possibility of similar functions in a set and thereby conflicting with the mathematical definition of sets. The second solution have similar problems i.g. that if we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we again break the definition of the mathematical set.
+    
+\item We define sets to contain terms $c'$ where $c' ::= c \setminus \lambda p.t$ in which case we can define a \emph{canonical set} $\ssetc{c_1,\ldots,c_n}$ to only contain terms $c'$. By doing this we put a narrow restriction on the set type in exchange of preserving the properties of a mathematical set.
+\end{enumerate}
+By choosing option two we define equality as:
 \[\begin{array}{c}
 \rule[S-EqTT]{}{\strue = \strue \step \strue}
 \quad
@@ -238,10 +236,11 @@ Equality
 \quad\\\\
 \rule[S-EqSetF]{c_i \in \ssetc{c'_1,\ldots,c'_n} \step \sfalse}
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
-
 \end{array}\]
 
-Set
+In the following we present the semantic rules for set terms. The rule S-SetC is used to construct a canonical set from a semi-canonical set by deterministicly reducing the set using rules S-SetR and S-SetS. We preserve the terministic property by the rule S-SetC. 
+
+We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set. As the sets are defined as mathematical sets, we do not provide any guarantees as to where the member is located in the set. Again, the terministic property is preserved. To provide a fejl-safe semantic for the pick rules, we define the rule by using an \emph{option}-like construction to make a syntax driven rule. 
 
 \[\begin{array}{c}
 \rule[S-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
@@ -298,6 +297,21 @@ Set
 \end{array}\]
 
 
+With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
+\[\begin{array}{l}
+\srec \  reduce.\lambda f.\lambda z.\lambda s.Pick \ s \\
+\quad Some (e,r) = reduce \ f \ (f \  z \  e) r\\
+\quad None = z
+\end{array}\]
+We can also define fixed point queries by generel recursion and set comprehension as:
+\[\begin{array}{l}
+\slet fix = \lambda V.\lambda E. \\
+\quad \slet f = \lambda v.\sLb y : (x,y) \in E \pipe x\in V \sRb . \\
+\quad\quad \slet fix2 = \lambda f.\srec fix'.\lambda s. \\
+\quad\quad\quad \sletin{e = f(s)}{\sif e \setminus s = {} \sthen S \selse fix' (e \cup s)} \\
+\ \quad\quad \s{in\ } fix2\  f\  V \\
+\end{array}\]
+
 \subsection{Type system}
 Types in FQL are defined by
 \begin{eqnarray*}
@@ -305,7 +319,7 @@ Types in FQL are defined by
 \end{eqnarray*}
 As discussed in section \ref{sec:semantics} we have to make sure
 that every element in a set can be compared for equality. We define
-a class of types that support this by the judgement 
+a class of types that support this by the judgement
 \smbox{\tau \in EQ}
 \[\begin{array}{c}
 \rule[EQ-Int]{}{\sint \in EQ}\quad
@@ -326,7 +340,7 @@ We can then define the typing judgement
 \rule[T-Eq]{\Gamma\vdash t_1 : \tau \quad \Gamma\vdash t_2 : \tau
 \quad \tau \in EQ}
 {\Gamma\vdash t_1 = t_2 : \sbool}\quad
-\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1 
+\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1
 \quad \Gamma \vdash t_2 : \tau_2}
 {\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
 \\\\
@@ -347,7 +361,7 @@ We can then define the typing judgement
 {\Gamma \vdash t_1 \in t_2 : \sbool}
 \\\\
 \rule[T-Pick]{\Gamma \vdash t_1 : \s{set}\ \tau_1
-\quad \Gamma[x_1 \mapsto \tau_1][x_2 \mapsto \s{set}\ \tau_1] 
+\quad \Gamma[x_1 \mapsto \tau_1][x_2 \mapsto \s{set}\ \tau_1]
 \vdash t_2 : \tau_2
 \quad \Gamma \vdash t_3 : \tau_2}
 {\Gamma\vdash \spick{t_1}{(x_1,x_2) = t_2}{t_3} : \tau_2}
@@ -381,28 +395,37 @@ Which we can use in the rule for lambda expressions
 
 We use $t \in C$ here to express that t is on cannonical form.
 
-\begin{lemma}[Progress] 
+\begin{lemma}[Progress]
 \label{lemma:progress}
 $\stackover{[]\vdash t:\tau}{\T}\ \im\ t \in C\  \lor\  \exists t'.\ t\step t'$
 \end{lemma}
 
 Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \begin{itemize}
+\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad
+\noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
+  {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
 
-\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ 
-\stackover{[]\vdash t_i : \tau}{\T_i} 
+By IH on $\T_0$ either $t_2$ is canonnical or $t_1 \step t_1'$. If
+$t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
+then $\T$ can step using S-Let.
+
+%\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
+
+\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\
+\stackover{[]\vdash t_i : \tau}{\T_i}
 \quad \stackover{\tau \in EQ}{\E}}
 {[]\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
 
-$\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either 
-$t_i \in C$ or $\exists t_i'. t_i \to t_i'$. 
+$\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either
+$t_i \in C$ or $\exists t_i'. t_i \to t_i'$.
 If $t_i \to t_i'$ for some i then we can step by S-Set1.
-Otherwise all $t_i$s are on cannonical form and we have two 
+Otherwise all $t_i$s are on cannonical form and we have two
 subcases.
 
-By cannonical form, lemma~\ref{lemma:equalityProgress}, 
+By cannonical form, lemma~\ref{lemma:equalityProgress},
 the $\T_i$s and $\E$ we know
-that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}. 
+that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}.
 c_i = c_j \to \strue \vee c_i = c_j \to \sfalse$. We will say that
 an element $c_i$ is unique in a set if for all other elements $j$
 it holds that $c_i = c_j \to \sfalse$.
@@ -412,16 +435,16 @@ unique, and we can use S-SetC, or at least one element is not
 unique. In the latter case, we can step with S-SetR if the first
 element is not unique, and S-SetS otherwise.
 
-\item Case $\T = \rule{\stackover{[]\vdash t_1 : \tau}{\T_1} 
-\quad \stackover{[]\vdash t_2 : \tau}{\T_2} 
+\item Case $\T = \rule{\stackover{[]\vdash t_1 : \tau}{\T_1}
+\quad \stackover{[]\vdash t_2 : \tau}{\T_2}
 \quad \stackover{\tau \in EQ}{\E}}
 {[]\vdash t_1 = t_2 : \sbool}$
 
-By IH on $\T_1$ and $\T_2$, either one of them can take a step, 
-which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$ 
+By IH on $\T_1$ and $\T_2$, either one of them can take a step,
+which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$
 are on cannonical form.
 
-By cannonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$, 
+By cannonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
 $\T_2$ and $\E$ we know that $t_1 = t_2$ steps to either $\strue$
 or $\sfalse$.
 
@@ -436,8 +459,8 @@ or $\sfalse$.
 
 \end{itemize}
 
-There are more cases, but 
-%they are fairly standard and 
+There are more cases, but
+%they are fairly standard and
 we omit them
 here for brevity.
 
@@ -451,12 +474,12 @@ $[]\vdash c_1:\tau \quad \land \quad []\vdash c_2:\tau \quad \land \quad \tau \i
 c_1 = c_2 \step \strue \quad \lor \quad c_1 = c_2 \step \sfalse$
 \end{lemma}
 
-Proof: By induction on the structure of $c_1$ 
+Proof: By induction on the structure of $c_1$
 \begin{itemize}
-\item Case $c_1 = n$ 
+\item Case $c_1 = n$
 
 Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ og S-EqNF to prove $c_1 = c_2 \step \sfalse$
- 
+
 \item Case $c_1 = true$
 
 We must have $\tau = \sbool$ and $c_2 = \strue$ or $c_2 = \sfalse$. Rule S-EqTT or S-EqTF can now be used to prove our goal.
@@ -467,19 +490,19 @@ Similar to above.
 
 \item Case $c_1 = (c_1^l, c_l^r)$
 
-$\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l \times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$ and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$ or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree rules S-EqTup? can be used to prove our goal. 
+$\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l \times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$ and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$ or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree rules S-EqTup? can be used to prove our goal.
 
 \item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
 
-$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct cannonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise. 
+$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct cannonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise.
 
 For all combinations of $c_i$ and $c'_j$ together with $\tau' \in C$ we may use IH to establish $c_i = c'_j \step \strue$ or $c_i = c'_j \step \sfalse$. These results can be used with one of the rules S-SetC, S-SetR or S-SetS to prove this case.
 
 \item Case $c_1 = \lambda p.t$
 
-This case is not possible. Since $\tau = \tau_1 \to \tau_2$ if not provable by the EQ-? rules. Is is therefor not possible that $c_1 = \lambda p.t$. 
+This case is not possible. Since $\tau = \tau_1 \to \tau_2$ if not provable by the EQ-? rules. Is is therefor not possible that $c_1 = \lambda p.t$.
 \end{itemize}
-  
+
 \begin{lemma}[Substitution] $ $
   \label{lemma:substitution}
 
@@ -489,7 +512,7 @@ $\stackover{\Gamma[x \mapsto \tau'] \vdash t: \tau}{\T} \quad \land \quad []\vda
 
 Proof: By induction on the structure of $\T$.
 %\begin{itemize}
-%\item Case $\T$ = 
+%\item Case $\T$ =
 %\end{itemize}
 
 
@@ -501,13 +524,13 @@ $\stackover{t \step t'}{\S} \quad \land \quad \stackover{[] \vdash t: \tau}{\T} 
 
 Proof: By induction on derivation $\S$.
 %\begin{itemize}
-%\item Case $\S$ = 
+%\item Case $\S$ =
 %\end{itemize}
 
 
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
-  
+
 \end{lemma}
 
 Proof:
