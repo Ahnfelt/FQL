@@ -340,6 +340,12 @@ We can then define the typing judgement
 \rule[T-In]{\Gamma\vdash t_1 : \tau
 \quad \Gamma \vdash t_2 : \s{set}\ \tau}
 {\Gamma \vdash t_1 \in t_2 : \sbool}
+\\\\
+\rule[T-Pick]{\Gamma \vdash t_1 : \s{set}\ \tau_1
+\quad \Gamma[x_1 \mapsto \tau_1][x_2 \mapsto \s{set}\ \tau_1] 
+\vdash t_2 : \tau_2
+\quad \Gamma \vdash t_3 : \tau_2}
+{\Gamma\vdash \spick{t_1}{(x_1,x_2) = t_2}{t_3} : \tau_2}
 \end{array}
 \]
 
