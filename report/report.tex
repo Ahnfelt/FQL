@@ -54,6 +54,7 @@
 \newcommand{\sthen}{\s{\ then\ }}
 \newcommand{\selse}{\s{\ else\ }}
 \newcommand{\sifthenelse}[3]{\sif #1 \sthen #2 \selse #3}
+\newcommand{\spick}[3]{\s{pick}\ #1\ \s{some}\ #2\ \s{none}\ #3}
 \newcommand{\srepeat}{\s{\ repeat\ }}
 \newcommand{\suntil}{\s{\ until\ }}
 \newcommand{\scase}{\s{\ case\ }}
@@ -262,6 +263,10 @@ Set
 \rule[S-SetInT]{c=c_i \step \strue}{c\in \ssetc{c_1,\ldots,c_n} \step \strue}(i \in \dotset{1}{n})
 \quad
 \rule[S-SetInF]{\forall i\in\{1,\ldots,n\}. c=c_i \step \sfalse}{c_m \in \ssetc{c_1,\ldots,c_n} \step \sfalse}
+\quad\\\\
+\rule[S-SetPickN]{}{\spick{\ssetc{}}{(x_1,x_2) = t_1}{t_2} \step t_2}
+\quad\\\\
+\rule[S-SetPickS]{}{\spick{\ssetc{c_1,\ldots,c_n}}{(x_1,x_2) = t_1}{t_2} \step \sletin{x_1 = c_i}{(\sletin{x_2 = \sset{c_1,\ldots,c_n}\setminus\sset{c_i}}{t_1}})}
 \quad\\\\
 \rule[S-SetU]{}{\ssetc{c_1,\ldots,c_m} \cup \ssetc{c_{m+1},\ldots,c_n} \step
 \{c_1,\ldots,c_m,c_{m+1},\ldots,c_n\}}
