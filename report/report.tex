@@ -300,8 +300,10 @@ Set
 
 
 With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
-\[\begin{array}
-\lambda t.reduce f = \lambda 
+\[\begin{array}{l}
+rec \  reduce.\lambda f.\lambda z.\lambda s.Pick \ s \\
+\quad Some (e,r) = reduce \ f \ (f \  z \  e) r\\
+\quad None = z
 \end{array}\]
 
 \subsection{Type system}
