@@ -323,10 +323,33 @@ We can then define the typing judgement
 \\\\
 \rule[T-If]{\Gamma\vdash t_1 : \sbool \quad \Gamma\vdash t_2 : \tau \quad \Gamma\vdash t_3 : \tau}{\Gamma\vdash \sif t_1 \sthen t_2 \selse t_3 : \tau}\quad
 \rule[T-Plus]{\Gamma\vdash t_1 : \sint \quad \Gamma\vdash t_2 : \sint}{\Gamma\vdash t_1 + t_2 : \sint}\\\\
-\rule[T-Eq]{t_1 \in EQ \quad t_2 \in EQ}{\Gamma\vdash t_1 = t_2 : \sbool}\quad
-\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1 \quad \Gamma \vdash t_2 : \tau_2}{\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
+\rule[T-Eq]{\Gamma\vdash t_1 : \tau \quad \Gamma\vdash t_2 : \tau
+\quad \tau \in EQ}
+{\Gamma\vdash t_1 = t_2 : \sbool}\quad
+\rule[T-Pair]{\Gamma\vdash t_1 : \tau_1 
+\quad \Gamma \vdash t_2 : \tau_2}
+{\Gamma \vdash (t_1, t_2) : \tau_1 \times \tau_2}
+\\\\
+\rule[T-App]{\Gamma\vdash t_1 : \tau_1 \to \tau_2 \quad \Gamma \vdash t_2 : \tau_1}{\Gamma \vdash t_1\ t_2 : \tau_2}\quad
+\rule[T-Rec]{\Gamma[x \mapsto \tau] \vdash t : \tau}
+{\Gamma\vdash \srec x. t : \tau}
+\\\\
+\rule[T-Let]{\Gamma \vdash t_1 : \tau_1
+\quad \Gamma[x \mapsto \tau_1] \vdash t_2 : \tau_2}
+{\Gamma\vdash \sletin{x = t_1}{t_2} : \tau_2}
+\\\\
+\rule[T-Union]{\Gamma\vdash t_1 : \s{set}\ \tau
+\quad \Gamma \vdash t_2 : \s{set}\ \tau}
+{\Gamma \vdash t_1 \cup t_2 : \s{set}\ \tau}
+\quad
+\rule[T-In]{\Gamma\vdash t_1 : \tau
+\quad \Gamma \vdash t_2 : \s{set}\ \tau}
+{\Gamma \vdash t_1 \in t_2 : \sbool}
 \end{array}
 \]
+
+The rules for T-Inter ($\cap$) and T-Diff ($\setminus$) are similar
+to the T-Union rule ($\cup$).
 
 Because every element of a set has to be an equality type we define the type inference rule for sets as
 \[
@@ -350,30 +373,67 @@ Which we can use in the rule for lambda expressions
 
 \subsection{Proofs}
 
+We use $t \in C$ here to express that t is on cannonical form.
 
 \begin{lemma}[Progress] 
 \label{lemma:progress}
 $\stackover{[]\vdash t:\tau}{\T}\ \im\ t \in C\  \lor\  \exists t'.\ t\step t'$
+\end{lemma}
 
 Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \begin{itemize}
-\item Case $\T = \rule{\noteover{\te{}t_1:\tau_1}{\T_0} \quad 
-\noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
-  {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
 
-By IH on $\T_0$ either $t_2$ is canonnical or $t_1 \step t_1'$. If
-$t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
-then $\T$ can step using S-Let.
+\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ 
+\stackover{[]\vdash t_i : \tau}{\T_i} 
+\quad \stackover{\tau \in EQ}{\E}}
+{[]\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
 
-\item Case $\T = \rule{\forall i\in \dotset{1}{n}.\ \Gamma\vdash t_i : \tau \quad \tau \in EQ}{\Gamma\vdash\sset{t_1,\ldots,t_n} : \sseta \tau}$
+$\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either 
+$t_i \in C$ or $\exists t_i'. t_i \to t_i'$. 
+If $t_i \to t_i'$ for some i then we can step by S-Set1.
+Otherwise all $t_i$s are on cannonical form and we have two 
+subcases.
 
-$\forall i \in \dotset{1}{n}.$ By IH in $\T_i$ $t_i \in C$ ...
+By cannonical form, lemma~\ref{lemma:equalityProgress}, 
+the $\T_i$s and $\E$ we know
+that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}. 
+c_i = c_j \to \strue \vee c_i = c_j \to \sfalse$. We will say that
+an element $c_i$ is unique in a set if for all other elements $j$
+it holds that $c_i = c_j \to \sfalse$.
 
-We get by lemma~\ref{lemma:equalityProgress}
+Either every element in the set is
+unique, and we can use S-SetC, or at least one element is not
+unique. In the latter case, we can step with S-SetR if the first
+element is not unique, and S-SetS otherwise.
+
+\item Case $\T = \rule{\stackover{[]\vdash t_1 : \tau}{\T_1} 
+\quad \stackover{[]\vdash t_2 : \tau}{\T_2} 
+\quad \stackover{\tau \in EQ}{\E}}
+{[]\vdash t_1 = t_2 : \sbool}$
+
+By IH on $\T_1$ and $\T_2$, either one of them can take a step, 
+which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$ 
+are on cannonical form.
+
+By cannonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$, 
+$\T_2$ and $\E$ we know that $t_1 = t_2$ steps to either $\strue$
+or $\sfalse$.
+
+%\item Case $\T = \rule{
+%\stackover{p \patbind \angled{\tau_1,\Gamma}}{\E}
+%\quad \stackover{\Gamma\vdash t : \tau_2}{\T}}
+%{[] \vdash \lambda p.t : \tau_1 \step \tau_2}$
+
+%By IH on $\T_1$ either $t_2 \in C$ or $t_1 \step t_1'$. If
+%$t_1 \step t_1'$ then $\T$ can step using S-Let1. If $t_1 \in C$
+%then $\T$ can step using S-Let.
 
 \end{itemize}
 
-\end{lemma}
+There are more cases, but 
+%they are fairly standard and 
+we omit them
+here for brevity.
 
 
 
