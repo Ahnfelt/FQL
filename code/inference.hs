@@ -93,6 +93,15 @@ isEquality (TFun t1 t2) = False
 isEquality (TInt) = True
 isEquality (TBool) = True
 
+allEquality (Work _ m q _) =
+    all m (Set.toList q)
+    where
+        all m [] = Nothing
+        all m (t:ts) = let t' = replace m t in
+            if isEquality t' 
+                then all m ts
+                else Just (show t' ++ " is not an equality type")
+
 problem t1 t2 a = do
     t1' <- rewrite t1
     t2' <- rewrite t2
@@ -229,7 +238,9 @@ solve :: State (Maybe String)
 solve = do
   Work l m q i <- get
   case l of 
-    [] -> return Nothing
+    [] -> do
+        w <- get
+        return $ allEquality w
     Constraint c1 c2 : cs -> do
            put $ Work cs m q i
            e <- unify c1 c2
@@ -247,8 +258,8 @@ main = do
     print w
     loop w 1
     where
-        loop (Work [] m q _) _ = 
-            case all m (Set.toList q) of
+        loop (Work [] m q i) _ = 
+            case allEquality (Work [] m q i) of
                 Just v -> putStrLn ("\nError: " ++ v)
                 Nothing -> do
                     let t = replace m (m Map.! result)
@@ -263,12 +274,6 @@ main = do
                     print w'
                     loop w' (n + 1)
         
-        all m [] = Nothing
-        all m (t:ts) = let t' = replace m t in
-            if isEquality t' 
-                then all m ts
-                else Just (show t' ++ " is not an equality type")
-            
         result = VName "res"
         
         chosen = t12 where
