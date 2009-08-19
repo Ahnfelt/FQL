@@ -136,21 +136,21 @@ FQL in it's core is simply types lambda calculus with a monomorph recursion cons
 
 The next section cover the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
 
-In section~\ref{sec:semantics} we give a operation small-step semantic for FQL and address some problems regarding the semantic for sets. After this we present our type system and show how this can be formalised in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a some what non exhaustive collection of proofs necessary to show desirable properties of our type system. 
+In section~\ref{sec:semantics} we give a operation small-step semantic for FQL and address some problems regarding the semantic for sets. After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a some what non exhaustive collection of proofs necessary to show desirable properties of our type system. 
 
 We will argue that a principle type exists, is unique and is found by out inference algorithm, but we will not cover the correctness of this algorithm in general. As a little proof of simplicity we have implemented the type inference system in Haskell which may be found in Appendix~\ref{app:inferenceCode}.
 
 \section{Syntax}
 \label{sec:syntax}
 
-It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from differen sets in a convinient way. We have choosen to use the form suggested in the paper with some minor modifications. However instead of incorporationg this feature directly into our language we have choosen to achive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}. 
+It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from different sets in a convenient way. We have chosen to use the form suggested in the paper with some minor modifications. However instead of incorporating this feature directly into our language we have chosen to archive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}. 
 
-The advantage of this approach is that our core language are smaller and thereby easyer to formalize, proof, and implement. A disadvantage is that the behaviour and correctness of the extended language now lies in the conversion function which may be hard to analyse. Anothe more practical implication could be that concise error reporting would be hard to implement.
+The advantage of this approach is that our core language are smaller and thereby easier to formalize, proof, and implement. A disadvantage is that the behavior and correctness of the extended language now lies in the conversion function which may be hard to analyze. Another more practical implication could be that concise error reporting would be hard to implement.
 
-\subsection{Abstract syntex}
+\subsection{Abstract syntax}
 \label{abstractSyntax}
 
-A program in FQL is a term $t$ which is defined by the following gramma.
+A program in FQL is a term $t$ which is defined by the following grammar.
 
 \begin{eqnarray*}
 t & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe t_1 + t_2 \pipe t_1
@@ -164,8 +164,8 @@ t_2) \pipe \lambda p.t \pipe t_1 t_2 \pipe \sletin{x \seq t_1}{t_2}
 The notion $t_1,\ldots,t_n$ generally means that $n$ may be $0$ which
 makes this syntactic sequence empty. This allows in this case the
 empty set. This syntax here only allow support for pairs and not
-tuples. It would however be possible to achive tuples as iterated
-pairs implementet as syntactic sugar. The lambda abstraction uses a pattern $p$ for binding variable and deconstruct pairs. Patterns are defined by
+tuples. It would however be possible to archive tuples as iterated
+pairs implemented as syntactic sugar. The lambda abstraction uses a pattern $p$ for binding variable and deconstruct pairs. Patterns are defined by
 
 \begin{eqnarray*}
 p & ::= &  x \pipe (p, p)
@@ -254,12 +254,12 @@ $x'$ is the fresh variable that replaced it in the pattern.
 We here present the semantics of FQL as a small step semantic by the judgment: \smbox{t \step t'}
 \\
 
-Certain terms is defined to be in \buzz{cannonical form} which means
+Certain terms is defined to be in \buzz{canonical form} which means
 that they should not evaluate or step further by any small-step
 rule. This will later serve to formulate progress as \buzz{ a term is
-  either in cannonical form or can step to some other term}.  
+  either in canonical form or can step to some other term}.  
 
-Cannonical terms $c$ are defined by
+Canonical terms $c$ are defined by
 
 \begin{eqnarray*}
 c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
@@ -267,7 +267,7 @@ p.t \pipe \ssetc{c_1,\ldots,c_n}
 \end{eqnarray*}
 
 
-The cannonical form for sets are non part of our abstract syntax. This
+The canonical form for sets are non part of our abstract syntax. This
 is because we would like to keep an invariant that canonical sets
 do not have duplicates with respect to the equality operator '$\s{=}$'.
 
@@ -301,10 +301,11 @@ We define the let construct and general recursion as:
 \end{array}\]
 
 
-The pattern matching in the lambda apstraction bind variables to
+The pattern matching in the lambda abstraction bind variables to
 canonical values and is the only way to deconstruct pairs.
 In order to extract the bindings from the patterns we define the
-judgement 
+judgment
+
 
 \smbox{\angled{p,c} \stepsub S}
 \[
