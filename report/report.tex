@@ -132,7 +132,7 @@ A task has been assigned by an ERP systems vendor to formulate a functional lang
 
 \section{Introduction}
 
-FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language hase integers and booleans as primitive types and pairs and sets as build-in structural types. 
+FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language hase integers and booleans as primitive types and pairs and sets as build-in structural types.
 
 
 In this section we present the FQL, a functional query language for relational databases. We will first go through the syntax of the language, then we will design semantic rules and finally design a type system.
@@ -384,7 +384,7 @@ We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set.
 
 With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
 \[\begin{array}{l}
-\srec \  reduce.\ \lambda f.\ \lambda z.\ \lambda s.\\ 
+\srec \  reduce.\ \lambda f.\ \lambda z.\ \lambda s.\\
 \quad \s{pick} \ s \\
 \quad\quad \s{some} (e,r) = reduce \ f \ (f \  z \  e)\ r\\
 \quad\quad \s{none} = z
@@ -493,46 +493,68 @@ The pattern judgment can now be used to extract the type of $p$ and the environm
 \subsection{Algorithm}
 \label{typeInference}
 
-The right part in parenthesis of each type rule can be interpreted 
-as constraints. Since there is exactly one rule per syntactic 
-construct, a straightforward traversal of the term by the rules 
-will be the basis of our inference algorithm. Every time we 
-encounter an $\alpha$ in the type rules, we generate a fresh type 
-variable and add the equality constraints as indicaded. Ignoring 
-polymorphism and EQ constraints, all that remains is to unify 
-the equality constraints. 
+The right part in parenthesis of each type rule can be interpreted
+as constraints. Since there is exactly one rule per syntactic
+construct, a straightforward traversal of the term by the rules
+will be the basis of our inference algorithm. Every time we
+encounter an $\alpha$ in the type rules, we generate a fresh type
+variable and add the equality constraints as indicaded. Ignoring
+polymorphism and EQ constraints, all that remains is to unify
+the equality constraints.
 
-In the face of polymorphism, however, we need to be a bit more 
+In the face of polymorphism, however, we need to be a bit more
 careful. Since we have let-polymorphism, the cases that need to be
-examined are $\sletin{x = e_1}{e_2}$ and $x$. 
+examined are $\sletin{x = e_1}{e_2}$ and $x$.
 
-In the case of $\sletin{x = e_1}{e_2}$ we need to calculate 
-$Close(\alpha_{t_1},\Gamma)$ where $\alpha_{t_1}$ is the type 
-variable that represents the type of $e_1$ and $\Gamma$ is the 
+In the case of $\sletin{x = e_1}{e_2}$ we need to calculate
+$Close(\alpha_{t_1},\Gamma)$ where $\alpha_{t_1}$ is the type
+variable that represents the type of $e_1$ and $\Gamma$ is the
 type environment. However, in order to capture the constraints
-that already apply to $\alpha_{t_1}$, so they also apply to 
-the corresponding variable in instances of the type scheme we 
-need to generate, we solve all constraints that have been 
+that already apply to $\alpha_{t_1}$, so they also apply to
+the corresponding variable in instances of the type scheme we
+need to generate, we solve all constraints that have been
 generated up until now before binding $x$. We then generalize
 $\alpha_{t_1}$ by making a type scheme $\forall \vec{\alpha}.\tau$
 where $\vec{\alpha}$ is the free variables in $\alpha_{t_1}$ that
-do not occur in $\Gamma$. Finally we bind $x$ to the type scheme 
+do not occur in $\Gamma$. Finally we bind $x$ to the type scheme
 and infer $e_2$ in the resulting environment.
 
 In the case of $x$, we simply look up $x$ in the type environment,
-which yields a type scheme $\forall \vec{\alpha}.\tau$. We 
-instantiate it by generating fresh type variables for each $\alpha$ 
+which yields a type scheme $\forall \vec{\alpha}.\tau$. We
+instantiate it by generating fresh type variables for each $\alpha$
 and replacing each of them in $\tau$.
 
 For every EQ constraint (the constraint that a type must be an
 equality type), the type can simply be insterted into a set.
-In the end, each element in the set can simply be checked 
+In the end, each element in the set can simply be checked
 structurally to ensure that it doesn't contain any function types.
 This amounts to a straightforward implementation of the EQ rules.
 
-An implementation of this algorithm can be found in appendix 
+An implementation of this algorithm can be found in appendix
 \ref{implementation}. Note that we solve the constraint generated
 by the TP rules on the fly.
+
+\subsection{Properties of type system}
+\label{syntacticProperties}
+
+Principal type property:
+To show that FQL has a principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$ and show that there are type that are more general for that term.
+
+\begin{eqnarray*}
+\sn &:& \sint\\
+\strue \vee \sfalse &:& \sbool\\
+x &:& \alpha \quad(\text{By T-Var})\\
+t_1 + t_2 &:& \sint \quad(\text{By T-Int})\\
+t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
+\sif t_1 \sthen t_2 \selse t_3 &:& \alpha_{t_2} \quad(\text{By T-If and the constraint } \alpha_{t_2} = \alpha_{t_3})\\
+(t_1, t_2) &:& \alpha_{t_1} \times \alpha_{t_2} \quad(\text{By T-Pair})\\
+\lambda p.t &:& \alpha_p \to \alpha_t \quad(\text{By T-Lam})\\
+t_1t_2 &:& \alpha \quad(\text{By induction on derivation of T-App})\\
+\sletin{x=t_1}{t_2} &:& \alpha_{t_2} \quad(\text{By T-Let and constraint }\alpha_{t_2} = \alpha_{let})\\
+rec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
+\sLb t^{,*} \sRb &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
+t_1 \cup t_2 &:& Set \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
+\end{eqnarray*}
 
 \section{Proofs}
 \label{sec:proofs}
