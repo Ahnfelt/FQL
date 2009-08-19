@@ -1,4 +1,5 @@
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Control.Monad.State.Strict as StateM
 import Control.Monad.State.Strict (get, put, runState)
 
@@ -14,7 +15,7 @@ data P = PVar Var | PPair P P
          deriving (Show, Eq)
 
 data T = TInt | TBool | TFun T T | TPair T T | TSet T | TVar Var
-         deriving Eq
+         deriving (Eq, Ord)
 
 instance Show T where
     show (TInt) = "int"
@@ -35,10 +36,10 @@ data Constraint = Constraint T T deriving Eq
 instance Show Constraint where
     show (Constraint t1 t2) = show t1 ++ " = " ++ show t2
 
-data Work = Work [Constraint] (Map.Map Var T) Int
+data Work = Work [Constraint] (Map.Map Var T) (Set.Set T) Int
 
 instance Show Work where
-    show (Work l m _) = 
+    show (Work l m _ _) = 
               drop 1 (foldl (\x y -> x ++ "\n" ++ show y) 
                     "" l ++ "\n") 
            ++ drop 1 (foldl (\x (k, v) -> 
@@ -56,22 +57,27 @@ replace m (TVar v) = case Map.lookup v m of
                        Nothing -> TVar v
 
 rewrite t = do
-    (Work _ m _) <- get
+    (Work _ m _ _) <- get
     return $ replace m t
 
 newVar = do 
-  (Work l m i) <- get
-  put $ Work l m (i+1)
+  (Work l m q i) <- get
+  put $ Work l m q (i+1)
   return $ TVar $ VNumber i
 
 constraint :: T -> T -> State ()
 constraint t1 t2 = do 
-  (Work l m i) <- get 
-  put $ Work (Constraint t1 t2 : l) m i
+  (Work l m q i) <- get 
+  put $ Work (Constraint t1 t2 : l) m q i
+
+equality :: T -> State ()
+equality t = do
+  (Work l m q i) <- get 
+  put $ Work l m (Set.insert t q) i
 
 bind v t = do
-    Work l m i <- get
-    put $ Work l (Map.insert v t m) i
+    Work l m q i <- get
+    put $ Work l (Map.insert v t m) q i
 
 occurs v (TVar v') = v == v'
 occurs v (TSet t) = occurs v t
@@ -79,6 +85,13 @@ occurs v (TPair t1 t2) = occurs v t1 || occurs v t2
 occurs v (TFun t1 t2) = occurs v t1 || occurs v t2
 occurs v (TInt) = False
 occurs v (TBool) = False
+
+isEquality (TVar v') = True
+isEquality (TSet t) = isEquality t
+isEquality (TPair t1 t2) = isEquality t1 && isEquality t2
+isEquality (TFun t1 t2) = False
+isEquality (TInt) = True
+isEquality (TBool) = True
 
 problem t1 t2 a = do
     t1' <- rewrite t1
@@ -138,10 +151,11 @@ infer env (EPlus e1 e2) t  = do
   infer env e1 v1
   infer env e2 v2
 infer env (EEqual e1 e2) t = do 
-  v1 <- newVar -- TODO EQ types
+  v1 <- newVar
   v2 <- newVar
   constraint v1 v2
   constraint t TBool
+  equality v1
   infer env e1 v1
   infer env e2 v2
 infer env (EIf e1 e2 e3) t = do 
@@ -198,6 +212,7 @@ infer env (ERec v e) t     = do
 infer env (ESet es) t      = do 
   v1 <- newVar 
   constraint t $ TSet v1
+  equality v1
   mapM (\e -> infer env e v1) es
   return ()
 infer env (EUnion e1 e2) t = do 
@@ -212,53 +227,34 @@ infer env (EUnion e1 e2) t = do
 
 solve :: State (Maybe String)
 solve = do
-  Work l m i <- get
+  Work l m q i <- get
   case l of 
     [] -> return Nothing
     Constraint c1 c2 : cs -> do
-           put $ Work cs m i
+           put $ Work cs m q i
            e <- unify c1 c2
            case e of
              Just v -> return $ Just v
              Nothing -> solve
 
 ---------------------------------------------------------------------
-s = Work [] Map.empty 1
-c1 = unify 
-     (TFun (TVar $ VName "x") TBool)
-     (TFun TInt (TVar $ VName "x"))
-c2 = unify 
-     (TPair (TVar $ VName "x") $ 
-            TPair (TVar $ VName "x") (TVar $ VName "y"))
-     (TPair TInt $ TPair (TVar $ VName "z") (TBool))
-
-inf e = do
-  let ((w, e), w') = runState aux s
-  putStrLn "Original constraints:"
-  print w
-  putStrLn "Final constraints and bindings:"
-  print w'
-  case e of 
-    Just v -> putStrLn ("Error: " ++ v)
-    Nothing -> return ()
-  where aux = do
-          infer Map.empty e (TVar (VName "res"))
-          w <- get
-          w' <- solve
-          return (w, w')
-
 main = do
-    let ((), w) = runState (infer Map.empty chosen (TVar result)) s
+    let ((), w) = runState 
+            (infer Map.empty chosen (TVar result)) 
+            (Work [] Map.empty Set.empty 1)
     putStrLn "----------------------------------------"
     putStrLn "Inferred constraints:"
     print w
     loop w 1
     where
-        loop (Work [] m _) _ = do
-            let t = replace m (m Map.! result)
-            putStrLn ("\nSuccess: " ++ show t)
-        loop (Work (Constraint t1 t2 : l) m i) n = do
-            let w = Work l m i
+        loop (Work [] m q _) _ = 
+            case all m (Set.toList q) of
+                Just v -> putStrLn ("\nError: " ++ v)
+                Nothing -> do
+                    let t = replace m (m Map.! result)
+                    putStrLn ("\nSuccess: " ++ show t)
+        loop (Work (Constraint t1 t2 : l) m q i) n = do
+            let w = Work l m q i
             let (e, w') = runState (unify t1 t2) w
             case e of
                 Just v -> putStrLn ("\nError: " ++ v)
@@ -266,9 +262,16 @@ main = do
                     putStrLn ("\nStep #" ++ show n ++ ":")
                     print w'
                     loop w' (n + 1)
+        
+        all m [] = Nothing
+        all m (t:ts) = let t' = replace m t in
+            if isEquality t' 
+                then all m ts
+                else Just (show t' ++ " is not an equality type")
+            
         result = VName "res"
         
-        chosen = t7 where
+        chosen = t12 where
             t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
             t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
             t3 = EEqual (EPair (EN 7) (EN 8)) (EPair (EN 7) (EN 8))
@@ -277,4 +280,9 @@ main = do
                  (EEqual (EVar $ VName "y") (EVar $ VName "x")))
             t6 = (EPair (EN 5) (EB True))
             t7 = EApp t5 t6
+            t8 = EPair (ELambda (PVar $ VName "x") (EN 1)) (EB False)
+            t9 = ESet [t8]
+            t10 = ESet [EN 7, EN 8]
+            t11 = EEqual t8 t8
+            t12 = EEqual (EN 7) (EN 8)
 
