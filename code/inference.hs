@@ -79,12 +79,28 @@ bind v t = do
     Work l m q i <- get
     put $ Work l (Map.insert v t m) q i
 
-occurs v (TVar v') = v == v'
-occurs v (TSet t) = occurs v t
-occurs v (TPair t1 t2) = occurs v t1 || occurs v t2
-occurs v (TFun t1 t2) = occurs v t1 || occurs v t2
-occurs v (TInt) = False
-occurs v (TBool) = False
+free t = do
+    t' <- rewrite t
+    return $ free' t'
+    where
+        free' (TVar v) = Set.singleton v
+        free' (TSet t) = free' t
+        free' (TPair t1 t2) = free' t1 `Set.union` free' t2
+        free' (TFun t1 t2) = free' t1 `Set.union` free' t2
+        free' (TInt) = Set.empty
+        free' (TBool) = Set.empty
+
+freeEnv e = do
+    l <- mapM f (Map.elems e)
+    return $ Set.fromList l
+    where
+        f (_, t) = do
+            t' <- rewrite t
+            free t'
+
+occurs v t = do
+    f <- free t
+    return $ Set.member v f
 
 isEquality (TVar v') = True
 isEquality (TSet t) = isEquality t
@@ -116,11 +132,13 @@ unify (TVar v) t = do
     case t' of
         TVar v' -> case t'' of
             TVar v'' | v' == v'' -> return Nothing
-            _ -> if occurs v' t''
-                then problem t' t'' "(occurs check)"
-                else do
-                    bind v' t''
-                    return Nothing
+            _ -> do
+                o <- occurs v' t''
+                if o
+                    then problem t' t'' "(occurs check)"
+                    else do
+                        bind v' t''
+                        return Nothing
         _ -> do 
             constraint t' t''
             return Nothing
@@ -185,20 +203,26 @@ infer env (EPair e1 e2) t  = do
   infer env e2 v2
 infer env (EVar v) t       = 
     case Map.lookup v env of
-      Just (l, t') -> do
-        l' <- mapM (\v' -> do v'' <- newVar
-                              return (v', v'')) l
-        let t'' = replace (Map.fromList l') t'
-        constraint t t''
-infer env (ELet v e1 e2) t = do return ()
-  {-v1 <- newVar
+        Just (l, t') -> do
+            l' <- mapM (\v' -> do 
+                v'' <- newVar
+                return (v', v'')) l
+            let t'' = replace (Map.fromList l') t'
+            constraint t t''
+infer env (ELet v e1 e2) t = do
+  v1 <- newVar
   v2 <- newVar
   infer env e1 v1
-  constraint v1 ????
+  s <- solve
+  case s of
+    Just v -> error v
+    Nothing -> return ()
   constraint t v2
-  let l = ????
-  let env' = Map.insert v (l, v1) env
-  infer env' e2 v2-}
+  v1' <- rewrite v1
+  f <- free v1'
+  f' <- freeEnv env
+  let env' = Map.insert v (Set.toList (f Set.difference f'), v1') env
+  infer env' e2 v2
 infer env (ELambda p e) t  = do
   (t', env') <- pattern p
   let env'' = Map.union env' env
@@ -276,13 +300,13 @@ main = do
         
         result = VName "res"
         
-        chosen = t12 where
+        chosen = t14 where
             t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
             t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
             t3 = EEqual (EPair (EN 7) (EN 8)) (EPair (EN 7) (EN 8))
             t4 = EEqual t1 t1
             t5 = (ELambda (PPair (PVar $ VName "x") (PVar $ VName "y")) 
-                 (EEqual (EVar $ VName "y") (EVar $ VName "x")))
+                (EEqual (EVar $ VName "y") (EVar $ VName "x")))
             t6 = (EPair (EN 5) (EB True))
             t7 = EApp t5 t6
             t8 = EPair (ELambda (PVar $ VName "x") (EN 1)) (EB False)
@@ -290,4 +314,8 @@ main = do
             t10 = ESet [EN 7, EN 8]
             t11 = EEqual t8 t8
             t12 = EEqual (EN 7) (EN 8)
+            t13 = ELambda (PVar $ VName "z") (EVar $ VName "z")
+            t14 = ELet (VName "f") t13 (EPair 
+                (EApp (EVar $ VName "f") (EN 7)) 
+                (EApp (EVar $ VName "f") (EB True)))
 
