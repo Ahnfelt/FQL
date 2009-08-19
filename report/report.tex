@@ -132,38 +132,49 @@ A task has been assigned by an ERP systems vendor to formulate a functional lang
 
 \section{Introduction}
 
-FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language hase integers and booleans as primitive types and pairs and sets as build-in structural types. 
+FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language has integers and booleans as primitive types and pairs and sets as build-in structural types. The language is implicitly typed and make use of type reconstruction to infer types and statically guarantee type safety. So despite a slightly different syntax and set instead of lists, FQL are vary similar to the core of ML. 
 
+The next section cover the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
 
-In this section we present the FQL, a functional query language for relational databases. We will first go through the syntax of the language, then we will design semantic rules and finally design a type system.
+In section~\ref{sec:semantics} we give a operation small-step semantic for FQL and address some problems regarding the semantic for sets. After this we present our type system and show how this can be formalised in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a some what non exhaustive collection of proofs necessary to show desirable properties of our type system. 
+
+We will argue that a principle type exists, is unique and is found by out inference algorithm, but we will not cover the correctness of this algorithm in general. As a little proof of simplicity we have implemented the type inference system in Haskell which may be found in Appendix~\ref{app:inferenceCode}.
 
 \section{Syntax}
 \label{sec:syntax}
 
+It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from differen sets in a convinient way. We have choosen to use the form suggested in the paper with some minor modifications. However instead of incorporationg this feature directly into our language we have choosen to achive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}. 
+
+The advantage of this approach is that our core language are smaller and thereby easyer to formalize, proof, and implement. A disadvantage is that the behaviour and correctness of the extended language now lies in the conversion function which may be hard to analyse. Anothe more practical implication could be that concise error reporting would be hard to implement.
+
 \subsection{Abstract syntex}
 \label{abstractSyntax}
 
-The syntax of FQL consists of \emph{terms}, \emph{patterns} and \emph{canonical forms of terms}. The terms will be defined by $t$:
+A program in FQL is a term $t$ which is defined by the following gramma.
+
 \begin{eqnarray*}
 t & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe t_1 + t_2 \pipe t_1
 = t_2 \pipe \sifthenelse{t_1}{t_2}{t_3} \\
 & & \pipe (t_1,
 t_2) \pipe \lambda p.t \pipe t_1 t_2 \pipe \sletin{x \seq t_1}{t_2}
-\pipe \srec x.t \pipe \sset{t^{,*}} \pipe t_1 \cup t_2
+\pipe \srec x.t \pipe \sset{t_1,\ldots,t_n}\\ 
+& & \pipe t_1 \cup t_2 \pipe t_1 \cap t_2 \pipe t_1 \setminus t_2 \pipe t_1 \in t_2 
 \end{eqnarray*}
-Where the patterns $p$ are defined by
+
+The notion $t_1,\ldots,t_n$ generally means that $n$ may be $0$ which
+makes this syntactic sequence empty. This allows in this case the
+empty set. This syntax here only allow support for pairs and not
+tuples. It would however be possible to achive tuples as iterated
+pairs implementet as syntactic sugar. The lambda abstraction uses a pattern $p$ for binding variable and deconstruct pairs. Patterns are defined by
+
 \begin{eqnarray*}
-p & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe (t_1, t_2) \pipe
-\sset{} \pipe \sset{p} \pipe p \cup p
+p & ::= &  x \pipe (p, p)
 \end{eqnarray*}
-As discussed in section \ref{sec:semantics} we need a subset of terms that are canonical. These are defined by $c$
-\begin{eqnarray*}
-c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
-p.t \pipe \ssetc{c_1,\ldots,c_n}
-\end{eqnarray*}
+
 
 \subsection{Concrete syntax}
 \label{sec:concreteSyntax}
+
 
 The concrete syntax for set comprehension is sketched here as $s$:
 
@@ -173,7 +184,7 @@ f & ::= & p \s{\ in\ } t, f \pipe p \s{\ in\ } t\\
 c & ::= & t, c \pipe t \\
 \end{eqnarray*}
 
-Note that p is a pattern and t is a term. The rules for translating
+Note that $p$ is a pattern and $t$ is a term. The rules for translating
 the concrete syntax to abstract syntax is sketched here as
 $\sug{t}$:
 
@@ -198,13 +209,15 @@ $\sug{t}$:
 \sugar{MC}{t} & \Longrightarrow & \sug{t}
 \end{eqnarray*}
 
+
 In summary, we take the cross product of the input sets, pass it
 through the well known filter function to apply the predicate,
 and map it with the output function. We generate one big pattern
 based on the patterns to the left of the input sets and use it as
 the pattern for the predicate and output functions, thus binding
-the values to the names as intended. An example of the concrete
-syntax is
+the values to the names as intended. We will show later how $\s{map}$, $\s{filter}$ and $\s{\times}$ can be defined in out core language.
+
+An example of the concrete syntax is
 \begin{verbatim}
 {(name, amount) : (name, accountnr) in owners,
                   (accountnr', amount) in accounts |
@@ -238,11 +251,29 @@ $x'$ is the fresh variable that replaced it in the pattern.
 \section{Semantics}
 \label{sec:semantics}
 
-We present the semantics of FQL as a small step semantic by the judgment: \smbox{t \step t'}
+We here present the semantics of FQL as a small step semantic by the judgment: \smbox{t \step t'}
 \\
-The binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
 
-Step rules.
+Certain terms is defined to be in \buzz{cannonical form} which means
+that they should not evaluate or step further by any small-step
+rule. This will later serve to formulate progress as \buzz{ a term is
+  either in cannonical form or can step to some other term}.  
+
+Cannonical terms $c$ are defined by
+
+\begin{eqnarray*}
+c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
+p.t \pipe \ssetc{c_1,\ldots,c_n}
+\end{eqnarray*}
+
+
+The cannonical form for sets are non part of our abstract syntax. This
+is because we would like to keep an invariant that canonical sets
+do not have duplicates with respect to the equality operator '$\s{=}$'.
+
+
+We are now ready to rule for all constructs in $t$. The binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
+
 \[\begin{array}{c}
 \rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad
 \rule[S-Step2]{t \step t'}{c \oplus t \step c \oplus t'}
@@ -270,8 +301,12 @@ We define the let construct and general recursion as:
 \end{array}\]
 
 
-We use pattern matching to deconstruct the sets to resemble a query language.
-In order to extract the bindings from the patterns we define the judgement \smbox{\angled{p,c} \stepsub S}
+The pattern matching in the lambda apstraction bind variables to
+canonical values and is the only way to deconstruct pairs.
+In order to extract the bindings from the patterns we define the
+judgement 
+
+\smbox{\angled{p,c} \stepsub S}
 \[
 \rule[SP-Var]{}{\angled{x,c} \stepsub [x\mapsto c]}\quad
 \rule[SP-Pair]{\angled{p_1, c_1} \stepsub S_1 \quad \angled{p_2, c_2} \stepsub S_2}
@@ -639,6 +674,9 @@ Proof:
 
 \newpage
 \begin{appendices}
+\section{Type inference in haskell}
+\label{app:inferenceCode}
+
 \end{appendices}
 
 \newpage
