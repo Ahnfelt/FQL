@@ -92,7 +92,7 @@ free t = do
 
 freeEnv e = do
     l <- mapM f (Map.elems e)
-    return $ Set.fromList l
+    return $ Set.unions l
     where
         f (_, t) = do
             t' <- rewrite t
@@ -221,7 +221,8 @@ infer env (ELet v e1 e2) t = do
   v1' <- rewrite v1
   f <- free v1'
   f' <- freeEnv env
-  let env' = Map.insert v (Set.toList (f Set.difference f'), v1') env
+  let l = Set.toList (f Set.\\ f')
+  let env' = Map.insert v (l, v1') env
   infer env' e2 v2
 infer env (ELambda p e) t  = do
   (t', env') <- pattern p
@@ -300,7 +301,7 @@ main = do
         
         result = VName "res"
         
-        chosen = t14 where
+        chosen = t15 where
             t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
             t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
             t3 = EEqual (EPair (EN 7) (EN 8)) (EPair (EN 7) (EN 8))
@@ -315,7 +316,12 @@ main = do
             t11 = EEqual t8 t8
             t12 = EEqual (EN 7) (EN 8)
             t13 = ELambda (PVar $ VName "z") (EVar $ VName "z")
-            t14 = ELet (VName "f") t13 (EPair 
-                (EApp (EVar $ VName "f") (EN 7)) 
-                (EApp (EVar $ VName "f") (EB True)))
-
+            t14 = el "f" t13 (EPair 
+                (EApp (ev "f") (EN 7)) 
+                (EApp (ev "f") (EB True)))
+            t15 = el "g" (ef "z" (EPlus (ev "z") (ev "z"))) t14
+            
+            ev n = EVar $ VName n
+            el n e1 e2 = ELet (VName n) e1 e2
+            ef n e = ELambda (PVar $ VName n) e
+            
