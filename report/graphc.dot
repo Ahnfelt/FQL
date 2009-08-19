@@ -1,0 +1,10 @@
+digraph A {
+    1 [style="bold"]
+    2 [style="bold"]
+    3 [style="bold"]
+    4 [style="bold"]
+    1 -> 2
+    2 -> 3
+    2 -> 4
+}
+
