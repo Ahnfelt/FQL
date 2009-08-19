@@ -125,15 +125,24 @@
 \parskip=8pt plus 2pt minus 4pt
 \maketitle
 
-%blah blah blah
-A task has been assigned by an ERP systems vendor to formulate a query language to extract the data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in queries by using a static type system. The language is to be integrated with the existing ERP host language, have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions.
+\begin{abstract}\noindent
+A task has been assigned by an ERP systems vendor to formulate a functional language with embedded query constructs intended to extract data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in its core as well as in it's querie constructs by using a static type system. The core language is required to have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions. In response to this request we here suggest the language FQL.
+\end{abstract}
 
-%\subsection{Requirements}
 
-\section{FQL}
+\section{Introduction}
+
+FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language hase integers and booleans as primitive types and pairs and sets as build-in structural types. 
+
+
 In this section we present the FQL, a functional query language for relational databases. We will first go through the syntax of the language, then we will design semantic rules and finally design a type system.
 
-\subsection{Syntax}
+\section{Syntax}
+\label{sec:syntax}
+
+\subsection{Abstract syntex}
+\label{abstractSyntax}
+
 The syntax of FQL consists of \emph{terms}, \emph{patterns} and \emph{canonical forms of terms}. The terms will be defined by $t$:
 \begin{eqnarray*}
 t & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe t_1 + t_2 \pipe t_1
@@ -153,8 +162,82 @@ c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
 p.t \pipe \ssetc{c_1,\ldots,c_n}
 \end{eqnarray*}
 
+\subsection{Concrete syntax}
+\label{sec:concreteSyntax}
 
-\subsection{Semantics\label{sec:semantics}}
+The concrete syntax for set comprehension is sketched here as $s$:
+
+\begin{eqnarray*}
+s & ::= & \{ t : f \pipe c\} \pipe \{ t : f \}\\
+f & ::= & p \s{\ in\ } t, f \pipe p \s{\ in\ } t\\
+c & ::= & t, c \pipe t \\
+\end{eqnarray*}
+
+Note that p is a pattern and t is a term. The rules for translating
+the concrete syntax to abstract syntax is sketched here as
+$\sug{t}$:
+
+\begin{eqnarray*}
+\sug{\{t:f\}} & \Longrightarrow & \sug{\{t:f\ |\ \s{true}\}} \\
+\sug{\{t:f\ |\ c\}} & \Longrightarrow &
+\s{map\ }
+(\lambda \sugar{CP}{f}. [\![ t ]\!])\
+(\s{filter\ } (\lambda \sugar{CP}{f}. \sugar{MC}{c})\
+\sugar{CV}{f})
+\end{eqnarray*}
+\begin{eqnarray*}
+\sugar{CV}{p\s{\ in\ } t, f} & \Longrightarrow & \sug{t} \times \sugar{CV}{f} \\
+\sugar{CV}{p\s{\ in\ } t} & \Longrightarrow & \sug{t}
+\end{eqnarray*}
+\begin{eqnarray*}
+\sugar{CP}{p\s{\ in\ } t, f} & \Longrightarrow & (\sugar{P}{p}, \sugar{CP}{f}) \\
+\sugar{CP}{p\s{\ in\ } t} & \Longrightarrow & p
+\end{eqnarray*}
+\begin{eqnarray*}
+\sugar{MC}{t, c} & \Longrightarrow & \sug{t} \s{\ and\ } \sugar{MC}{c} \\
+\sugar{MC}{t} & \Longrightarrow & \sug{t}
+\end{eqnarray*}
+
+In summary, we take the cross product of the input sets, pass it
+through the well known filter function to apply the predicate,
+and map it with the output function. We generate one big pattern
+based on the patterns to the left of the input sets and use it as
+the pattern for the predicate and output functions, thus binding
+the values to the names as intended. An example of the concrete
+syntax is
+\begin{verbatim}
+{(name, amount) : (name, accountnr) in owners,
+                  (accountnr', amount) in accounts |
+                  accountnr = accountnr'}
+\end{verbatim}
+which is translated to the abstract syntax
+\begin{eqnarray*}
+&&\s{map\ } (\lambda ((name, accountnr), (accountnr', amount)). (name, amount))\\
+&&\quad(\s{filter\ } (\lambda ((name, accountnr), (accountnr', amount)). accountnr = accountnr')\\
+&&\quad(owners \times accounts))
+\end{eqnarray*}
+This may be expressed more succinctly as
+\begin{verbatim}
+{(name, amount) : (name, accountnr) in owners,
+                  (accountnr, amount) in accounts}
+\end{verbatim}
+Note that $accountnr$ is used twice here. The intention is that
+both places in the pattern must match the same value
+simultaneously, and the resulting abstract syntax is the same as
+in the previous example. This can be implemented as syntactic sugar
+by keeping track of which variables have been used before in the
+set comprehension. In case a variable $x$ is encountered again in a
+pattern, replace that occurrence with a fresh variable $x'$ and add
+the constraint $x = x'$ to
+the filter. For booleans, integers and other literals, they too can
+be replaced by a constraint $c = x'$ where $c$ is the literal and
+$x'$ is the fresh variable that replaced it in the pattern.
+
+
+
+\section{Semantics}
+\label{sec:semantics}
+
 We present the semantics of FQL as a small step semantic by the judgment: \smbox{t \step t'}
 \\
 The binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
@@ -182,7 +265,7 @@ We define the let construct and general recursion as:
 \[\begin{array}{c}
 \rule[S-Let1]{t_1 \step t_1'}
   {\sletin{x=t_1}{t_2} \step \sletin{x=t_1'}{t_2}}\quad
-\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}\\
+\rule[S-Let]{}{\sletin{x=c}{t_2} \step [x \mapsto c ] t_2}\\\\
 \rule[S-Rec]{}{\srec x.t \step [x \mapsto (\srec x.t)] t}
 \end{array}\]
 
@@ -314,7 +397,9 @@ We can also define fixed point queries by general recursion and set comprehensio
 \ \quad\quad \s{in\ } fix2\  f\  V \\
 \end{array}\]
 
-\subsection{Type system}
+\section{Type system}
+\label{sec:typeSystem}
+
 Types in FQL are defined by
 \begin{eqnarray*}
 \tau &::=& \sbool \pipe \sint \pipe \tau \to \tau \pipe \tau \times \tau \pipe \sseta \tau \pipe \alpha\\
@@ -404,7 +489,12 @@ The pattern judgment can now be used to extract the type of $p$ and the environm
 \]
 
 
-\subsection{Proofs}
+\subsection{Type inference}
+\label{typeInference}
+
+
+\section{Proofs}
+\label{sec:proofs}
 
 We use $t \in C$ here to express that t is on canonical form.
 
@@ -548,75 +638,6 @@ Proof: By induction on derivation $\S$.
 
 Proof:
 
-\subsection{Concrete syntax}
-
-The concrete syntax for set comprehension is sketched here as $s$:
-
-\begin{eqnarray*}
-s & ::= & \{ t : f \pipe c\} \pipe \{ t : f \}\\
-f & ::= & p \s{\ in\ } t, f \pipe p \s{\ in\ } t\\
-c & ::= & t, c \pipe t \\
-\end{eqnarray*}
-
-Note that p is a pattern and t is a term. The rules for translating
-the concrete syntax to abstract syntax is sketched here as
-$\sug{t}$:
-
-\begin{eqnarray*}
-\sug{\{t:f\}} & \Longrightarrow & \sug{\{t:f\ |\ \s{true}\}} \\
-\sug{\{t:f\ |\ c\}} & \Longrightarrow &
-\s{map\ }
-(\lambda \sugar{CP}{f}. [\![ t ]\!])\
-(\s{filter\ } (\lambda \sugar{CP}{f}. \sugar{MC}{c})\
-\sugar{CV}{f})
-\end{eqnarray*}
-\begin{eqnarray*}
-\sugar{CV}{p\s{\ in\ } t, f} & \Longrightarrow & \sug{t} \times \sugar{CV}{f} \\
-\sugar{CV}{p\s{\ in\ } t} & \Longrightarrow & \sug{t}
-\end{eqnarray*}
-\begin{eqnarray*}
-\sugar{CP}{p\s{\ in\ } t, f} & \Longrightarrow & (\sugar{P}{p}, \sugar{CP}{f}) \\
-\sugar{CP}{p\s{\ in\ } t} & \Longrightarrow & p
-\end{eqnarray*}
-\begin{eqnarray*}
-\sugar{MC}{t, c} & \Longrightarrow & \sug{t} \s{\ and\ } \sugar{MC}{c} \\
-\sugar{MC}{t} & \Longrightarrow & \sug{t}
-\end{eqnarray*}
-
-In summary, we take the cross product of the input sets, pass it
-through the well known filter function to apply the predicate,
-and map it with the output function. We generate one big pattern
-based on the patterns to the left of the input sets and use it as
-the pattern for the predicate and output functions, thus binding
-the values to the names as intended. An example of the concrete
-syntax is
-\begin{verbatim}
-{(name, amount) : (name, accountnr) in owners,
-                  (accountnr', amount) in accounts |
-                  accountnr = accountnr'}
-\end{verbatim}
-which is translated to the abstract syntax
-\begin{eqnarray*}
-&&\s{map\ } (\lambda ((name, accountnr), (accountnr', amount)). (name, amount))\\
-&&\quad(\s{filter\ } (\lambda ((name, accountnr), (accountnr', amount)). accountnr = accountnr')\\
-&&\quad(owners \times accounts))
-\end{eqnarray*}
-This may be expressed more succinctly as
-\begin{verbatim}
-{(name, amount) : (name, accountnr) in owners,
-                  (accountnr, amount) in accounts}
-\end{verbatim}
-Note that $accountnr$ is used twice here. The intention is that
-both places in the pattern must match the same value
-simultaneously, and the resulting abstract syntax is the same as
-in the previous example. This can be implemented as syntactic sugar
-by keeping track of which variables have been used before in the
-set comprehension. In case a variable $x$ is encountered again in a
-pattern, replace that occurrence with a fresh variable $x'$ and add
-the constraint $x = x'$ to
-the filter. For booleans, integers and other literals, they too can
-be replaced by a constraint $c = x'$ where $c$ is the literal and
-$x'$ is the fresh variable that replaced it in the pattern.
 
 \newpage
 \begin{appendices}
