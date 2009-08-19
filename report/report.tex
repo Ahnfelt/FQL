@@ -636,7 +636,7 @@ If $t_i \to t_i'$ for some i then we can step by S-Set1.
 Otherwise all $t_i$s are on cannonball form and we have two
 subcases.
 
-By cannonball form, lemma~\ref{lemma:equalityProgress},
+By canonical form, lemma~\ref{lemma:equalityProgress},
 the $\T_i$s and $\E$ we know
 that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}.
 c_i = c_j \to \strue \vee c_i = c_j \to \sfalse$. We will say that
@@ -739,8 +739,10 @@ Proof: By induction on derivation $\S$.
 
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
-  FQL satifies the principal type property.
+  
+  $\text{FQL satifies the principal type property.}$
 \end{lemma}
+
 To show that FQL satisfies the principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$.
 \begin{eqnarray*}
 \sn &:& \sint\\
@@ -762,8 +764,6 @@ For every term $t$ we can now derive all the possible types for that term from t
 
 \newpage
 \begin{appendices}
-
-
 \section{Implementation}
 \label{appendix:implementation}
 
