@@ -14,7 +14,7 @@
 \usepackage[top=3cm, bottom=3cm, left=3.5cm, right=3.5cm]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\hyphenation{hvor}
+\hyphenation{where}
 
 % Messy redefinition of caption font -
 \newcommand{\captionfonts}{\small}
@@ -238,9 +238,9 @@ By choosing option two we define equality as:
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
 \end{array}\]
 
-In the following we present the semantic rules for set terms. The rule S-SetC is used to construct a canonical set from a semi-canonical set by deterministicly reducing the set using rules S-SetR and S-SetS. We preserve the terministic property by the rule S-SetC.
+In the following we present the semantic rules for set terms. The rule S-SetC is used to construct a canonical set from a semi-canonical set by deterministically reducing the set using rules S-SetR and S-SetS. We preserve the termination property by the rule S-SetC.
 
-We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set. As the sets are defined as mathematical sets, we do not provide any guarantees as to where the member is located in the set and again, the terministic property is preserved by rule S-SetC. To provide a fejl-safe semantic for the pick rules, we define the rule by using an \emph{option}-like construction to make it syntax driven.
+We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set. As the sets are defined as mathematical sets, we do not provide any guarantees as to where the member is located in the set and again, the termination property is preserved by rule S-SetC. To provide a fail-safe semantic for the pick rules, we define the rule by using an \emph{option}-like construction to make it syntax driven.
 
 \[\begin{array}{c}
 \rule[S-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
@@ -303,7 +303,7 @@ With the \code{pick} construct in place, we can now define the aggregation funct
 \quad Some (e,r) = reduce \ f \ (f \  z \  e) r\\
 \quad None = z
 \end{array}\]
-We can also define fixed point queries by generel recursion and set comprehension as:
+We can also define fixed point queries by general recursion and set comprehension as:
 \[\begin{array}{l}
 \slet fix = \lambda V.\lambda E. \\
 \quad \slet f = \lambda v.\sLb y : (x,y) \in E \pipe x\in V \sRb . \\
@@ -393,7 +393,7 @@ Which we can use in the rule for lambda expressions
 
 \subsection{Proofs}
 
-We use $t \in C$ here to express that t is on cannonical form.
+We use $t \in C$ here to express that t is on canonical form.
 
 \begin{lemma}[Progress]
 \label{lemma:progress}
@@ -406,7 +406,7 @@ Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
   {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
 
-By IH on $\T_0$ either $t_2$ is canonnical or $t_1 \step t_1'$. If
+By IH on $\T_0$ either $t_2$ is canonical or $t_1 \step t_1'$. If
 $t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
 then $\T$ can step using S-Let.
 
@@ -420,10 +420,10 @@ then $\T$ can step using S-Let.
 $\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either
 $t_i \in C$ or $\exists t_i'. t_i \to t_i'$.
 If $t_i \to t_i'$ for some i then we can step by S-Set1.
-Otherwise all $t_i$s are on cannonical form and we have two
+Otherwise all $t_i$s are on cannonball form and we have two
 subcases.
 
-By cannonical form, lemma~\ref{lemma:equalityProgress},
+By cannonball form, lemma~\ref{lemma:equalityProgress},
 the $\T_i$s and $\E$ we know
 that $\forall i \in \dotset{1}{n}. \forall j \in \dotset{1}{n}.
 c_i = c_j \to \strue \vee c_i = c_j \to \sfalse$. We will say that
@@ -442,9 +442,9 @@ element is not unique, and S-SetS otherwise.
 
 By IH on $\T_1$ and $\T_2$, either one of them can take a step,
 which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$
-are on cannonical form.
+are on cannonball form.
 
-By cannonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
+By cannonball form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
 $\T_2$ and $\E$ we know that $t_1 = t_2$ steps to either $\strue$
 or $\sfalse$.
 
@@ -478,7 +478,7 @@ Proof: By induction on the structure of $c_1$
 \begin{itemize}
 \item Case $c_1 = n$
 
-Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ og S-EqNF to prove $c_1 = c_2 \step \sfalse$
+Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ and S-EqNF to prove $c_1 = c_2 \step \sfalse$
 
 \item Case $c_1 = true$
 
@@ -494,7 +494,7 @@ $\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[
 
 \item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
 
-$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct cannonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise.
+$\tau = \sseta \tau'$ and $c_2 = \ssetc{c'_1,\ldots,c'_m}$ for some distinct canonical values $c'_1,\ldots,c'_m$. All values $c_i$ and $c'_i$ have type $\tau'$. Now the only way that a type $\sseta \tau'$ can be constructed is by use of the T-Set rule which have $\tau' \in C$ as a premise.
 
 For all combinations of $c_i$ and $c'_j$ together with $\tau' \in C$ we may use IH to establish $c_i = c'_j \step \strue$ or $c_i = c'_j \step \sfalse$. These results can be used with one of the rules S-SetC, S-SetR or S-SetS to prove this case.
 
@@ -537,7 +537,7 @@ Proof:
 
 \subsection{Concrete syntax}
 
-The concrete syntax for set comprehensions is sketched here as $s$:
+The concrete syntax for set comprehension is sketched here as $s$:
 
 \begin{eqnarray*}
 s & ::= & \{ t : f \pipe c\} \pipe \{ t : f \}\\
@@ -588,21 +588,21 @@ which is translated to the abstract syntax
 &&\quad(\s{filter\ } (\lambda ((name, accountnr), (accountnr', amount)). accountnr = accountnr')\\
 &&\quad(owners \times accounts))
 \end{eqnarray*}
-This may be expressed more succintly as
+This may be expressed more succinctly as
 \begin{verbatim}
 {(name, amount) : (name, accountnr) in owners,
                   (accountnr, amount) in accounts}
 \end{verbatim}
 Note that $accountnr$ is used twice here. The intention is that
 both places in the pattern must match the same value
-simultaniously, and the resulting abstract syntax is the same as
+simultaneously, and the resulting abstract syntax is the same as
 in the previous example. This can be implemented as syntactic sugar
 by keeping track of which variables have been used before in the
 set comprehension. In case a variable $x$ is encountered again in a
-pattern, replace that occurence with a fresh variable $x'$ and add
+pattern, replace that occurrence with a fresh variable $x'$ and add
 the constraint $x = x'$ to
 the filter. For booleans, integers and other literals, they too can
-be relaced by a constraint $c = x'$ where $c$ is the literal and
+be replaced by a constraint $c = x'$ where $c$ is the literal and
 $x'$ is the fresh variable that replaced it in the pattern.
 
 \newpage
