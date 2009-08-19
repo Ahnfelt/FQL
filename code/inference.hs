@@ -302,6 +302,7 @@ main = do
         
         result = VName "res"
         
+        -- Examples (both ones that can type check and ones that cannot)
         chosen = t15 where
             t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
             t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
@@ -322,6 +323,7 @@ main = do
                 (EApp (ev "f") (EB True)))
             t15 = el "g" (ef "z" (EPlus (ev "z") (ev "z"))) t14
             
+            -- Helper functions
             ev n = EVar $ VName n
             el n e1 e2 = ELet (VName n) e1 e2
             ef n e = ELambda (PVar $ VName n) e
