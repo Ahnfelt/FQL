@@ -10,7 +10,7 @@ data E = EN Int | EB Bool | EVar Var | EPlus E E
        | ESet [E] | EUnion E E
          deriving (Show, Eq)
 
-data P = PVar String | PPair P P 
+data P = PVar Var | PPair P P 
          deriving (Show, Eq)
 
 data T = TInt | TBool | TFun T T | TPair T T | TSet T | TVar Var
@@ -19,7 +19,7 @@ data T = TInt | TBool | TFun T T | TPair T T | TSet T | TVar Var
 instance Show T where
     show (TInt) = "int"
     show (TBool) = "bool"
-    show (TFun t1 t2) = show t1 ++ "->" ++ show t2
+    show (TFun t1 t2) = show t1 ++ " -> " ++ show t2
     show (TPair t1 t2) = show t1 ++ " x " ++ show t2 
     show (TSet t) = "{"++ show t ++ "}"
     show (TVar v) = show v
@@ -27,7 +27,7 @@ instance Show T where
 data Var = VNumber Int | VName String deriving (Eq, Ord)
 
 instance Show Var where
-    show (VNumber n) = "X_"++show n
+    show (VNumber n) = "t"++show n
     show (VName n) = n
 
 data Constraint = Constraint T T deriving Eq
@@ -74,7 +74,9 @@ replace m (TBool) = TBool
 replace m (TFun t1 t2) = TFun (replace m t1) (replace m t2)
 replace m (TPair t1 t2) = TPair (replace m t1) (replace m t2)
 replace m (TSet t) = TSet (replace m t)
-replace m (TVar v) = m Map.! v
+replace m (TVar v) = case Map.lookup v m of
+                       Just t -> t
+                       Nothing -> TVar v
 
 newVar = do 
   (Work l m i) <- get
@@ -86,7 +88,7 @@ constraint t1 t2 = do
   (Work l m i) <- get 
   put $ Work (Constraint t1 t2 : l) m (i+1)
 
-substitute :: Var -> T -> State Bool
+substitute :: Var -> T -> State (Maybe String)
 substitute v t = do
   (Work l m i) <- get
   t' <- rewrite (TVar v)
@@ -94,9 +96,9 @@ substitute v t = do
   case t' of
     (TVar v') -> do
             put $ Work l (Map.insert v' t'' m) i
-            return True
+            return Nothing
     _ -> do
-      return (t'' == t')
+      unify t'' t'
 
 occurs v (TVar v') = v == v'
 occurs v (TSet t) = occurs v t
@@ -104,31 +106,38 @@ occurs v (TPair t1 t2) = occurs v t1 || occurs v t2
 occurs v (TFun t1 t2) = occurs v t1 || occurs v t2
 occurs v _ = False
 
-problem t1 t2 = do
+problem t1 t2 a = do
     t1' <- rewrite t1
     t2' <- rewrite t2
     return $ Just
-               ("Cannot unify " ++ show t1' ++ " with " ++ show t2')
+               ("Cannot unify " ++ show t1' ++ " with " ++ show t2'
+                                    ++ " in " ++ a)
 
 unify :: T -> T -> State (Maybe String)
 unify t1 t2 | t1 == t2 = return Nothing
 unify (TVar v) t = if occurs v t 
-                   then do
-                     return Nothing
+                   then problem (TVar v) t "occurs"
                    else do
-                     s <- substitute v t
-                     if s
-                         then return Nothing
-                         else problem (TVar v) t
+                     substitute v t
 unify t (TVar v) = unify (TVar v) t
 unify (TSet t1) (TSet t2) = unify t1 t2
 unify (TPair t1 t2) (TPair t3 t4) = do
-  unify t2 t4
   unify t1 t3
+  unify t2 t4
 unify (TFun t1 t2) (TFun t3 t4) = do
-  unify t2 t4
   unify t1 t3
-unify t1 t2 = problem t1 t2
+  unify t2 t4
+unify t1 t2 = problem t1 t2 "unify"
+
+pattern :: P -> State (T, Map.Map Var ([Var], T))
+pattern (PVar v) = do 
+  t <- newVar
+  return (t, Map.singleton v ([], t))
+pattern (PPair p1 p2) = do
+  (t1, m1) <- pattern p1
+  (t2, m2) <- pattern p2
+  return (TPair t1 t2, Map.union m2 m1)
+-- TODO: Check duplicate vars
 
 infer :: Map.Map Var ([Var], T) -> E -> T -> State ()
 infer env (EN _) t         = constraint t TInt 
@@ -180,8 +189,12 @@ infer env (ELet v e1 e2) t = do return ()
   let l = ????
   let env' = Map.insert v (l, v1) env
   infer env' e2 v2-}
-infer env (ELambda p e) t  = do return ()
-  
+infer env (ELambda p e) t  = do
+  (t', env') <- pattern p
+  let env'' = Map.union env' env
+  v1 <- newVar
+  constraint t $ TFun t' v1
+  infer env'' e v1 
 infer env (EApp e1 e2) t   = do 
   v1 <- newVar 
   v2 <- newVar
@@ -247,3 +260,15 @@ check c = do
   case e of 
     Just v -> putStrLn ("Error: " ++ v)
     Nothing -> return ()
+
+
+
+-----
+t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
+t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
+t3 = EEqual (EPair (EN 7) (EN 8)) (EPair (EN 7) (EN 8))
+t4 = EEqual t1 t1
+t5 = (ELambda (PPair (PVar $ VName "x") (PVar $ VName "y")) 
+     (EEqual (EVar $ VName "y") (EVar $ VName "x")))
+t6 = (EPair (EN 5) (EB True))
+t7 = EApp t5 t6
