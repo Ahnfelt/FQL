@@ -85,7 +85,7 @@ problem t1 t2 a = do
     t2' <- rewrite t2
     return $ Just
                ("Cannot unify " ++ show t1' ++ " with " ++ show t2'
-                                    ++ " in " ++ a)
+                                    ++ " " ++ a)
 
 unify :: T -> T -> State (Maybe String)
 unify (TVar v) t = do
@@ -95,7 +95,7 @@ unify (TVar v) t = do
         TVar v' -> case t'' of
             TVar v'' | v' == v'' -> return Nothing
             _ -> if occurs v' t''
-                then problem t' t'' "occurs"
+                then problem t' t'' "(occurs check)"
                 else do
                     bind v' t''
                     return Nothing
@@ -114,7 +114,7 @@ unify (TFun t1 t2) (TFun t3 t4) = do
   return Nothing
 unify (TInt) (TInt) = return Nothing
 unify (TBool) (TBool) = return Nothing
-unify t1 t2 = problem t1 t2 "unify"
+unify t1 t2 = problem t1 t2 ""
 
 pattern :: P -> State (T, Map.Map Var ([Var], T))
 pattern (PVar v) = do 
@@ -248,21 +248,25 @@ inf e = do
           return (w, w')
 
 main = do
-    let ((), w) = runState (infer Map.empty chosen (TVar (VName "res"))) s
+    let ((), w) = runState (infer Map.empty chosen (TVar result)) s
     putStrLn "----------------------------------------"
-    putStrLn "Initial state:"
+    putStrLn "Inferred constraints:"
     print w
     loop w 1
     where
-        loop (Work [] _ _) _ = return ()
+        loop (Work [] m _) _ = do
+            let t = replace m (m Map.! result)
+            putStrLn ("\nSuccess: " ++ show t)
         loop (Work (Constraint t1 t2 : l) m i) n = do
             let w = Work l m i
             let (e, w') = runState (unify t1 t2) w
-            putStrLn ("\nStep #" ++ show n ++ ":")
-            print w'
             case e of
-                Just v -> putStrLn ("Error: " ++ v)
-                Nothing -> loop w' (n + 1)
+                Just v -> putStrLn ("\nError: " ++ v)
+                Nothing -> do
+                    putStrLn ("\nStep #" ++ show n ++ ":")
+                    print w'
+                    loop w' (n + 1)
+        result = VName "res"
         
         chosen = t7 where
             t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
