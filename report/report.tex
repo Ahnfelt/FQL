@@ -301,17 +301,19 @@ We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set.
 
 With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
 \[\begin{array}{l}
-\srec \  reduce.\lambda f.\lambda z.\lambda s.Pick \ s \\
-\quad Some (e,r) = reduce \ f \ (f \  z \  e) r\\
-\quad None = z
+\srec \  reduce.\ \lambda f.\ \lambda z.\ \lambda s.\\ 
+\quad \s{pick} \ s \\
+\quad\quad \s{some} (e,r) = reduce \ f \ (f \  z \  e)\ r\\
+\quad\quad \s{none} = z
 \end{array}\]
 We can also define fixed point queries by general recursion and set comprehension as:
 \[\begin{array}{l}
-\slet fix = \lambda V.\lambda E. \\
-\quad \slet f = \lambda v.\sLb y : (x,y) \in E \pipe x\in V \sRb . \\
-\quad\quad \slet fix2 = \lambda f.\srec fix'.\lambda s. \\
-\quad\quad\quad \sletin{e = f(s)}{\sif e \setminus s = {} \sthen S \selse fix' (e \cup s)} \\
-\ \quad\quad \s{in\ } fix2\  f\  V \\
+\slet fix = \lambda f.\ \srec fix'.\ \lambda s.\\
+\quad\quad\sletin{e = f\ s}{\sif e \setminus s = {} \sthen s \selse fix'\ (e \cup s)}\s{\ in} \\
+\\
+\slet edges = \{(1, 2), (2, 3), (2, 4)\} \s{\ in}\\
+\slet neighbors = \lambda v.\ \sLb y : (x,y) \s{\ in\ } edges \pipe x\in v \sRb\ \s{in} \\
+\quad\quad fix\ neighbors\  \{1, 2, 3, 4\}
 \end{array}\]
 
 \subsection{Type system}
@@ -400,6 +402,9 @@ The pattern judgment can now be used to extract the type of $p$ and the environm
 \[
 \rule[T-Lam]{p \patbind \angled{\alpha_p,\Gamma_2} \quad\Gamma_1\Gamma_2 \vdash t : \alpha_t}{\Gamma_1 \vdash \lambda p.t : \alpha_{\lambda}} (\alpha_\lambda = \alpha_p \to \alpha_t)
 \]
+
+\subsection{Algorithm}
+
 
 
 \subsection{Proofs}
