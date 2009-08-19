@@ -133,18 +133,18 @@ A task has been assigned by an ERP systems vendor to formulate a functional lang
 
 \section{Introduction}
 
-FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language has integers and booleans as primitive types and pairs and sets as build-in structural types. The language is implicitly typed and make use of type reconstruction to infer types and statically guarantee type safety. So despite a slightly different syntax and set instead of lists, FQL are vary similar to the core of ML. 
+FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language has integers and booleans as primitive types and pairs and sets as build-in structural types. The language is implicitly typed and make use of type reconstruction to infer types and statically guarantee type safety. So despite a slightly different syntax and set instead of lists, FQL are vary similar to the core of ML.
 
 The next section cover the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
 
-In section~\ref{sec:semantics} we give a operation small-step semantic for FQL and address some problems regarding the semantic for sets. After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a some what non exhaustive collection of proofs necessary to show desirable properties of our type system. 
+In section~\ref{sec:semantics} we give a operation small-step semantic for FQL and address some problems regarding the semantic for sets. After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a some what non exhaustive collection of proofs necessary to show desirable properties of our type system.
 
 We will argue that a principle type exists, is unique and is found by out inference algorithm, but we will not cover the correctness of this algorithm in general. As a little proof of simplicity we have implemented the type inference system in Haskell which may be found in Appendix~\ref{appendix:implementation}.
 
 \section{Syntax}
 \label{sec:syntax}
 
-It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from different sets in a convenient way. We have chosen to use the form suggested in the paper with some minor modifications. However instead of incorporating this feature directly into our language we have chosen to archive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}. 
+It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from different sets in a convenient way. We have chosen to use the form suggested in the paper with some minor modifications. However instead of incorporating this feature directly into our language we have chosen to archive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}.
 
 The advantage of this approach is that our core language are smaller and thereby easier to formalize, proof, and implement. A disadvantage is that the behavior and correctness of the extended language now lies in the conversion function which may be hard to analyze. Another more practical implication could be that concise error reporting would be hard to implement.
 
@@ -158,8 +158,8 @@ t & ::= & \sn \pipe \strue \pipe \sfalse \pipe x \pipe t_1 + t_2 \pipe t_1
 = t_2 \pipe \sifthenelse{t_1}{t_2}{t_3} \\
 & & \pipe (t_1,
 t_2) \pipe \lambda p.t \pipe t_1 t_2 \pipe \sletin{x \seq t_1}{t_2}
-\pipe \srec x.t \pipe \sset{t_1,\ldots,t_n}\\ 
-& & \pipe t_1 \cup t_2 \pipe t_1 \cap t_2 \pipe t_1 \setminus t_2 \pipe t_1 \in t_2 
+\pipe \srec x.t \pipe \sset{t_1,\ldots,t_n}\\
+& & \pipe t_1 \cup t_2 \pipe t_1 \cap t_2 \pipe t_1 \setminus t_2 \pipe t_1 \in t_2
 \end{eqnarray*}
 
 The notion $t_1,\ldots,t_n$ generally means that $n$ may be $0$ which
@@ -258,7 +258,7 @@ We here present the semantics of FQL as a small step semantic by the judgment: \
 Certain terms is defined to be in \buzz{canonical form} which means
 that they should not evaluate or step further by any small-step
 rule. This will later serve to formulate progress as \buzz{ a term is
-  either in canonical form or can step to some other term}.  
+  either in canonical form or can step to some other term}.
 
 Canonical terms $c$ are defined by
 
@@ -607,27 +607,6 @@ generated by the TP rules on the fly.
 \label{syntacticProperties}
 
 Principal type property:
-To show that FQL has a principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$ and show that there are type that are more general for that term.
-
-\begin{eqnarray*}
-\sn &:& \sint\\
-\strue \vee \sfalse &:& \sbool\\
-x &:& \alpha \quad(\text{By T-Var})\\
-t_1 + t_2 &:& \sint \quad(\text{By T-Int})\\
-t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
-\sif t_1 \sthen t_2 \selse t_3 &:& \alpha_{t_2} \quad(\text{By T-If and the constraint } \alpha_{t_2} = \alpha_{t_3})\\
-(t_1, t_2) &:& \alpha_{t_1} \times \alpha_{t_2} \quad(\text{By T-Pair})\\
-\lambda p.t &:& \alpha_p \to \alpha_t \quad(\text{By T-Lam})\\
-t_1t_2 &:& \alpha \quad(\text{By induction on derivation of T-App})\\
-\sletin{x=t_1}{t_2} &:& \alpha_{t_2} \quad(\text{By T-Let and constraint }\alpha_{t_2} = \alpha_{let})\\
-rec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
-\sLb t^{,*} \sRb &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
-t_1 \cup t_2 &:& Set \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
-\end{eqnarray*}
-
-
-\section{Proofs}
-\label{sec:proofs}
 
 We use $t \in C$ here to express that t is on canonical form.
 
@@ -700,9 +679,6 @@ There are more cases, but
 we omit them
 here for brevity.
 
-
-
-
 \begin{lemma}[Equality progress] $ $
   \label{lemma:equalityProgress}
 
@@ -763,13 +739,27 @@ Proof: By induction on derivation $\S$.
 %\item Case $\S$ =
 %\end{itemize}
 
-
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
-
+  FQL satifies the principal type property.
 \end{lemma}
-
-Proof:
+To show that FQL satisfies the principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$.
+\begin{eqnarray*}
+\sn &:& \sint\\
+\strue \vee \sfalse &:& \sbool\\
+x &:& \alpha \quad(\text{By T-Var})\\
+t_1 + t_2 &:& \sint \quad(\text{By T-Int})\\
+t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
+\sif t_1 \sthen t_2 \selse t_3 &:& \alpha_{t_2} \quad(\text{By T-If and the constraint } \alpha_{t_2} = \alpha_{t_3})\\
+(t_1, t_2) &:& \alpha_{t_1} \times \alpha_{t_2} \quad(\text{By T-Pair})\\
+\lambda p.t &:& \alpha_p \to \alpha_t \quad(\text{By T-Lam})\\
+t_1t_2 &:& \alpha \quad(\text{By induction on derivation of T-App})\\
+\sletin{x=t_1}{t_2} &:& \alpha_{t_2} \quad(\text{By T-Let and constraint }\alpha_{t_2} = \alpha_{let})\\
+rec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
+\sLb t^{,*} \sRb &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
+t_1 \cup t_2 &:& Set \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
+\end{eqnarray*}
+For every term $t$ we can now derive all the possible types for that term from the type given in the above list.
 
 
 \newpage
