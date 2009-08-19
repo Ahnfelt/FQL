@@ -94,9 +94,10 @@ freeEnv e = do
     l <- mapM f (Map.elems e)
     return $ Set.unions l
     where
-        f (_, t) = do
+        f (a, t) = do
             t' <- rewrite t
-            free t'
+            v <- free t'
+            return $ v Set.\\ (Set.fromList a)
 
 occurs v t = do
     f <- free t

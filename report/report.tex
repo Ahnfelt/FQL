@@ -491,12 +491,48 @@ The pattern judgment can now be used to extract the type of $p$ and the environm
 \]
 
 \subsection{Algorithm}
-
-
-
-\subsection{Type inference}
 \label{typeInference}
 
+The right part in parenthesis of each type rule can be interpreted 
+as constraints. Since there is exactly one rule per syntactic 
+construct, a straightforward traversal of the term by the rules 
+will be the basis of our inference algorithm. Every time we 
+encounter an $\alpha$ in the type rules, we generate a fresh type 
+variable and add the equality constraints as indicaded. Ignoring 
+polymorphism and EQ constraints, all that remains is to unify 
+the equality constraints. 
+
+In the face of polymorphism, however, we need to be a bit more 
+careful. Since we have let-polymorphism, the cases that need to be
+examined are $\sletin{x = e_1}{e_2}$ and $x$. 
+
+In the case of $\sletin{x = e_1}{e_2}$ we need to calculate 
+$Close(\alpha_{t_1},\Gamma)$ where $\alpha_{t_1}$ is the type 
+variable that represents the type of $e_1$ and $\Gamma$ is the 
+type environment. However, in order to capture the constraints
+that already apply to $\alpha_{t_1}$, so they also apply to 
+the corresponding variable in instances of the type scheme we 
+need to generate, we solve all constraints that have been 
+generated up until now before binding $x$. We then generalize
+$\alpha_{t_1}$ by making a type scheme $\forall \vec{\alpha}.\tau$
+where $\vec{\alpha}$ is the free variables in $\alpha_{t_1}$ that
+do not occur in $\Gamma$. Finally we bind $x$ to the type scheme 
+and infer $e_2$ in the resulting environment.
+
+In the case of $x$, we simply look up $x$ in the type environment,
+which yields a type scheme $\forall \vec{\alpha}.\tau$. We 
+instantiate it by generating fresh type variables for each $\alpha$ 
+and replacing each of them in $\tau$.
+
+For every EQ constraint (the constraint that a type must be an
+equality type), the type can simply be insterted into a set.
+In the end, each element in the set can simply be checked 
+structurally to ensure that it doesn't contain any function types.
+This amounts to a straightforward implementation of the EQ rules.
+
+An implementation of this algorithm can be found in appendix 
+\ref{implementation}. Note that we solve the constraint generated
+by the TP rules on the fly.
 
 \section{Proofs}
 \label{sec:proofs}
