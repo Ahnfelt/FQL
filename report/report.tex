@@ -393,7 +393,7 @@ We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set.
 \quad\\\\
 \rule[S-SetDT]{c_1 = c'_j \step \strue}
 {\ssetc{c_1,\ldots,c_n} \setminus \ssetc{c'_1,\ldots,c'_j,\ldots,c'_m} \step
-  \sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_{j-1},c'_{j+1},\ldots,c'_m}
+  \sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_j,\ldots,c'_m}
 }
 \quad\\\\
 \rule[S-SetDF]{\forall j \in \dotset{1}{m} c_1 = c'_j \step \sfalse}
@@ -738,6 +738,25 @@ Proof: By induction on derivation $\S$.
 %\item Case $\S$ =
 %\end{itemize}
 
+\begin{lemma}[Soundness] $ $
+  \label{lemma:soundness}
+
+If $[] \vdash t : \tau$ then the evaluation of $t$ does not get 
+stuck.
+\end{lemma}
+
+Proof: Suppose that $t$ is a well typed term that steps to $t'$. 
+Then progress tells us that $t'$ is not stuck. 
+Preservation tells us that $t'$ has the same type as $t$, 
+and by induction it does not get stuck either.
+
+\begin{lemma}[Termination] $ $
+  \label{lemma:termination}
+
+Except for terms containing $\s{rec}$, all well typed terms 
+evaluate to a cannonical form.
+\end{lemma}
+
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
   FQL satifies the principal type property.
@@ -745,7 +764,8 @@ Proof: By induction on derivation $\S$.
 To show that FQL satisfies the principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$.
 \begin{eqnarray*}
 \sn &:& \sint\\
-\strue \vee \sfalse &:& \sbool\\
+\strue &:& \sbool\\
+\sfalse &:& \sbool\\
 x &:& \alpha \quad(\text{By T-Var})\\
 t_1 + t_2 &:& \sint \quad(\text{By T-Int})\\
 t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
@@ -754,9 +774,9 @@ t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
 \lambda p.t &:& \alpha_p \to \alpha_t \quad(\text{By T-Lam})\\
 t_1t_2 &:& \alpha \quad(\text{By induction on derivation of T-App})\\
 \sletin{x=t_1}{t_2} &:& \alpha_{t_2} \quad(\text{By T-Let and constraint }\alpha_{t_2} = \alpha_{let})\\
-rec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
+\srec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
 \sLb t^{,*} \sRb &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
-t_1 \cup t_2 &:& Set \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
+t_1 \cup t_2 &:& \sseta \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
 \end{eqnarray*}
 For every term $t$ we can now derive all the possible types for that term from the type given in the above list.
 
