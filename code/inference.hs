@@ -19,8 +19,8 @@ data T = TInt | TBool | TFun T T | TPair T T | TSet T | TVar Var
 instance Show T where
     show (TInt) = "int"
     show (TBool) = "bool"
-    show (TFun t1 t2) = show t1 ++ " -> " ++ show t2
-    show (TPair t1 t2) = show t1 ++ " x " ++ show t2 
+    show (TFun t1 t2) = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
+    show (TPair t1 t2) = "(" ++ show t1 ++ ", " ++ show t2 ++ ")"
     show (TSet t) = "{"++ show t ++ "}"
     show (TVar v) = show v
 
@@ -42,32 +42,9 @@ instance Show Work where
               drop 1 (foldl (\x y -> x ++ "\n" ++ show y) 
                     "" l ++ "\n") 
            ++ drop 1 (foldl (\x (k, v) -> 
-                         x ++ "\n" ++ show k ++ " -> " ++ show v)
+                         x ++ "\n" ++ show k ++ ": " ++ show v)
                   "" (Map.toList m))
-    
--- TODO: Make it work on all types
-rewrite :: T -> State T
-rewrite (TInt) = return TInt
-rewrite (TBool) = return TBool
-rewrite (TFun t1 t2) = do
-  t1' <- rewrite t1
-  t2' <- rewrite t2
-  return $ TFun t1' t2'
-rewrite (TPair t1 t2) = do
-  t1' <- rewrite t1
-  t2' <- rewrite t2
-  return $ TPair t1' t2'
-rewrite (TSet t) = do
-  t' <- rewrite t
-  return $ TSet t
-rewrite (TVar v) = do
-  (Work _ m _) <- get
-  case Map.lookup v m of
-    Just t -> case t of 
-                TVar v' | Map.member v' m -> rewrite t
-                _ -> return t
-    Nothing -> return (TVar v)
-
+  
 replace :: Map.Map Var T -> T -> T
 replace m (TInt) = TInt
 replace m (TBool) = TBool
@@ -75,8 +52,12 @@ replace m (TFun t1 t2) = TFun (replace m t1) (replace m t2)
 replace m (TPair t1 t2) = TPair (replace m t1) (replace m t2)
 replace m (TSet t) = TSet (replace m t)
 replace m (TVar v) = case Map.lookup v m of
-                       Just t -> t
+                       Just t -> replace m t
                        Nothing -> TVar v
+
+rewrite t = do
+    (Work _ m _) <- get
+    return $ replace m t
 
 newVar = do 
   (Work l m i) <- get
@@ -86,25 +67,18 @@ newVar = do
 constraint :: T -> T -> State ()
 constraint t1 t2 = do 
   (Work l m i) <- get 
-  put $ Work (Constraint t1 t2 : l) m (i+1)
+  put $ Work (Constraint t1 t2 : l) m i
 
-substitute :: Var -> T -> State (Maybe String)
-substitute v t = do
-  (Work l m i) <- get
-  t' <- rewrite (TVar v)
-  t'' <- rewrite t
-  case t' of
-    (TVar v') -> do
-            put $ Work l (Map.insert v' t'' m) i
-            return Nothing
-    _ -> do
-      unify t'' t'
+bind v t = do
+    Work l m i <- get
+    put $ Work l (Map.insert v t m) i
 
 occurs v (TVar v') = v == v'
 occurs v (TSet t) = occurs v t
 occurs v (TPair t1 t2) = occurs v t1 || occurs v t2
 occurs v (TFun t1 t2) = occurs v t1 || occurs v t2
-occurs v _ = False
+occurs v (TInt) = False
+occurs v (TBool) = False
 
 problem t1 t2 a = do
     t1' <- rewrite t1
@@ -114,19 +88,32 @@ problem t1 t2 a = do
                                     ++ " in " ++ a)
 
 unify :: T -> T -> State (Maybe String)
-unify t1 t2 | t1 == t2 = return Nothing
-unify (TVar v) t = if occurs v t 
-                   then problem (TVar v) t "occurs"
-                   else do
-                     substitute v t
+unify (TVar v) t = do
+    t' <- rewrite (TVar v)
+    t'' <- rewrite t
+    case t' of
+        TVar v' -> case t'' of
+            TVar v'' | v' == v'' -> return Nothing
+            _ -> if occurs v' t''
+                then problem t' t'' "occurs"
+                else do
+                    bind v' t''
+                    return Nothing
+        _ -> do 
+            constraint t' t''
+            return Nothing
 unify t (TVar v) = unify (TVar v) t
 unify (TSet t1) (TSet t2) = unify t1 t2
 unify (TPair t1 t2) (TPair t3 t4) = do
-  unify t1 t3
-  unify t2 t4
+  constraint t1 t3
+  constraint t2 t4
+  return Nothing
 unify (TFun t1 t2) (TFun t3 t4) = do
-  unify t1 t3
-  unify t2 t4
+  constraint t1 t3
+  constraint t2 t4
+  return Nothing
+unify (TInt) (TInt) = return Nothing
+unify (TBool) (TBool) = return Nothing
 unify t1 t2 = problem t1 t2 "unify"
 
 pattern :: P -> State (T, Map.Map Var ([Var], T))
@@ -223,15 +210,6 @@ infer env (EUnion e1 e2) t = do
   constraint t v2
   constraint t $ TSet v3
 
-s = Work [] Map.empty 1
-c1 = unify 
-     (TFun (TVar $ VName "x") TBool)
-     (TFun TInt (TVar $ VName "x"))
-c2 = unify 
-     (TPair (TVar $ VName "x") $ 
-            TPair (TVar $ VName "x") (TVar $ VName "y"))
-     (TPair TInt $ TPair (TVar $ VName "z") (TBool))
-
 solve :: State (Maybe String)
 solve = do
   Work l m i <- get
@@ -244,31 +222,55 @@ solve = do
              Just v -> return $ Just v
              Nothing -> solve
 
+---------------------------------------------------------------------
+s = Work [] Map.empty 1
+c1 = unify 
+     (TFun (TVar $ VName "x") TBool)
+     (TFun TInt (TVar $ VName "x"))
+c2 = unify 
+     (TPair (TVar $ VName "x") $ 
+            TPair (TVar $ VName "x") (TVar $ VName "y"))
+     (TPair TInt $ TPair (TVar $ VName "z") (TBool))
+
 inf e = do
-  let (e, w) = runState aux s
+  let ((w, e), w') = runState aux s
+  putStrLn "Original constraints:"
   print w
+  putStrLn "Final constraints and bindings:"
+  print w'
   case e of 
     Just v -> putStrLn ("Error: " ++ v)
     Nothing -> return ()
   where aux = do
           infer Map.empty e (TVar (VName "res"))
-          solve
+          w <- get
+          w' <- solve
+          return (w, w')
 
-check c = do
-  let (e, w) = runState c s
-  print w
-  case e of 
-    Just v -> putStrLn ("Error: " ++ v)
-    Nothing -> return ()
+main = do
+    let ((), w) = runState (infer Map.empty chosen (TVar (VName "res"))) s
+    putStrLn "----------------------------------------"
+    putStrLn "Initial state:"
+    print w
+    loop w 1
+    where
+        loop (Work [] _ _) _ = return ()
+        loop (Work (Constraint t1 t2 : l) m i) n = do
+            let w = Work l m i
+            let (e, w') = runState (unify t1 t2) w
+            putStrLn ("\nStep #" ++ show n ++ ":")
+            print w'
+            case e of
+                Just v -> putStrLn ("Error: " ++ v)
+                Nothing -> loop w' (n + 1)
+        
+        chosen = t7 where
+            t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
+            t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
+            t3 = EEqual (EPair (EN 7) (EN 8)) (EPair (EN 7) (EN 8))
+            t4 = EEqual t1 t1
+            t5 = (ELambda (PPair (PVar $ VName "x") (PVar $ VName "y")) 
+                 (EEqual (EVar $ VName "y") (EVar $ VName "x")))
+            t6 = (EPair (EN 5) (EB True))
+            t7 = EApp t5 t6
 
-
-
------
-t1 = ELambda (PVar $ VName "a") (EPair (EN 1) (EB True))
-t2 = ELambda (PVar $ VName "a") (EPlus (EN 1) (EB True))
-t3 = EEqual (EPair (EN 7) (EN 8)) (EPair (EN 7) (EN 8))
-t4 = EEqual t1 t1
-t5 = (ELambda (PPair (PVar $ VName "x") (PVar $ VName "y")) 
-     (EEqual (EVar $ VName "y") (EVar $ VName "x")))
-t6 = (EPair (EN 5) (EB True))
-t7 = EApp t5 t6
