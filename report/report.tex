@@ -126,19 +126,22 @@
 \maketitle
 
 \begin{abstract}\noindent
-A task has been assigned by an ERP systems vendor to formulate a functional language with embedded query constructs intended to extract data in the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in its core as well as in it's querie constructs by using a static type system. The core language is required to have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions. In response to this request we here suggest the language FQL.
+A task has been assigned by an ERP systems vendor to formulate a functional language with embedded query constructs intended to extract data from the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in its core as well as in it's query constructs by using a static type system. The core language is required to have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions. In response to this request we present the language FQL.
 \end{abstract}
 
 
 \section{Introduction}
 
-FQL in it's core is simply types lambda calculus with a monomorph recursion constrict and support for polymorphic let bindings. The language has integers and booleans as primitive types and pairs and sets as build-in structural types. The language is implicitly typed and make use of type reconstruction to infer types and statically guarantee type safety. So despite a slightly different syntax and set instead of lists, FQL are vary similar to the core of ML.
+FQL in it's core is a simply typed lambda calculus with monomorphic recursion and support for polymorphic let bindings. The language has integers and booleans as primitive types, and pairs and sets as build-in structural types. The language is implicitly typed and makes use of type reconstruction to infer types and statically guarantee type safety. 
+So despite a slightly different syntax and sets instead of lists, FQL is very similar to the core of ML.
 
-The next section cover the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
+The next section covers the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
 
-In section~\ref{sec:semantics} we give a operation small-step semantic for FQL and address some problems regarding the semantic for sets. After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a some what non exhaustive collection of proofs necessary to show desirable properties of our type system.
+In section~\ref{sec:semantics} we give an operational small-step semantic for FQL and address some problems regarding the semantic for sets. 
+After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a somewhat non-exhaustive collection of proofs necessary to show desirable properties of our type system.
 
-We will argue that a principle type exists, is unique and is found by out inference algorithm, but we will not cover the correctness of this algorithm in general. As a little proof of simplicity we have implemented the type inference system in Haskell which may be found in Appendix~\ref{appendix:implementation}.
+We will argue that a principle type exists, is unique and is found by our inference algorithm, but we will not cover the correctness of this algorithm in general. 
+To test the feasability we have implemented the type reconstruction alogrithm in Haskell, and the code is listed in appendix~\ref{appendix:implementation}.
 
 \section{Syntax}
 \label{sec:syntax}
@@ -246,6 +249,69 @@ the filter. For booleans, integers and other literals, they too can
 be replaced by a constraint $c = x'$ where $c$ is the literal and
 $x'$ is the fresh variable that replaced it in the pattern.
 
+
+\section{Examples}
+
+The \code{pick} construct is the only deconstructor on sets which give access to the elements. 
+By using it, we can define new functions like \code{map} and \code{reduce}.
+The \code{reduce} function can be specified as:
+
+\[\begin{array}{l}
+\lambda f.\ \srec \  reduce'.\ \lambda z.\ \lambda s.\\
+\quad \s{pick} \ s \\
+\quad\quad \s{some} (e,r) = reduce' \ (f \  z \  e)\ r\\
+\quad\quad \s{none} = z
+\end{array}\]
+
+As shown in the paper \code{reduce} may be seen as a aggregate 
+constructor. Given the plus function it returns the sum 
+function. Since the order in which \code{reduce} visits the 
+elements is not specified, it only make sense to give 
+\code{reduce} an associative function.
+The \code{map} function can be specified as:
+
+\[\begin{array}{l}
+\lambda f.\ \lambda s.\\
+\quad reduce\ (\lambda l.\ \lambda r.\ l \cup \{f\ r\}) \ \{\}\ s \\
+\end{array}\]
+
+The \code{filter} function can be specified as:
+\[\begin{array}{l}
+\lambda f.\ \lambda s.\\
+\quad reduce\ (\lambda l.\ \lambda r.\\
+\quad\quad \sifthenelse{f\ r}{l \cup \{r\}}{l}) \ \{\}\ s \\
+\end{array}\]
+
+The \code{flatten} function can be specified as:
+\[\begin{array}{l}
+\lambda s.\\
+\quad reduce\ (\lambda l.\ \lambda r.\ l \cup r) \ \{\}\ s \\
+\end{array}\]
+
+The fix-point construct as suggested in the paper can also be defined using higher order functions. We can also construct fixed point queries by general recursion and set comprehension as:
+
+\[\begin{array}{l}
+\lambda f.\ \srec fix'.\ \lambda s.\\
+\quad\quad\sletin{e = f\ s}{\sif e \setminus s = \{\} \sthen s \selse fix'\ (e \cup s)} \\
+\end{array}\]
+A concrete example of finding all nodes reachable from 1 would be:
+\[\begin{array}{l}
+\s{let\ } edges = \{(1, 2), (2, 3), (2, 4)\} \s{\ in}\\
+\s{let\ } neighbors = \lambda v.\ \sLb y : (x,y) \s{\ in\ } edges \pipe x\in v \sRb\ \s{in} \\
+\quad\quad fix\ neighbors\  \{1\}
+\end{array}\]
+
+The steps are sketched in figure \ref{figure:graph},
+where the bold nodes are in the set.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.15\textwidth]{grapha.png}
+\includegraphics[width=0.15\textwidth]{graphb.png}
+\includegraphics[width=0.15\textwidth]{graphc.png}
+\caption{The three iterations in the reaching fixed point function.}
+\label{figure:graph}
+\end{figure}
 
 
 \section{Semantics}
@@ -425,37 +491,6 @@ We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a can
 \end{array}\]
 
 
-With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
-\[\begin{array}{l}
-\srec \  reduce.\ \lambda f.\ \lambda z.\ \lambda s.\\
-\quad \s{pick} \ s \\
-\quad\quad \s{some} (e,r) = reduce \ f \ (f \  z \  e)\ r\\
-\quad\quad \s{none} = z
-\end{array}\]
-We can also define fixed point queries by general recursion and set comprehension as:
-\[\begin{array}{l}
-\lambda f.\ \srec fix'.\ \lambda s.\\
-\quad\quad\sletin{e = f\ s}{\sif e \setminus s = \{\} \sthen s \selse fix'\ (e \cup s)} \\
-\end{array}\]
-A concrete example of finding all nodes reachable from 1 would be:
-\[\begin{array}{l}
-\s{let\ } edges = \{(1, 2), (2, 3), (2, 4)\} \s{\ in}\\
-\s{let\ } neighbors = \lambda v.\ \sLb y : (x,y) \s{\ in\ } edges \pipe x\in v \sRb\ \s{in} \\
-\quad\quad fix\ neighbors\  \{1\}
-\end{array}\]
-
-The steps are sketched in figure \ref{figure:graph},
-where the bold nodes are in the set.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.15\textwidth]{grapha.png}
-\includegraphics[width=0.15\textwidth]{graphb.png}
-\includegraphics[width=0.15\textwidth]{graphc.png}
-\caption{The three iterations in the reaching fixed point function.}
-\label{figure:graph}
-\end{figure}
-
 \section{Type system}
 \label{sec:typeSystem}
 
@@ -611,6 +646,7 @@ generated by the TP rules on the fly.
 
 \subsection{Properties of type system}
 \label{syntacticProperties}
+\label{sec:proofs}
 
 We use $t \in C$ here to express that $t$ is in canonical form.
 
@@ -639,7 +675,7 @@ then $\T$ can step using S-Let.
 $\forall i \in \dotset{1}{n}.$ By IH on $\T_i$, either
 $t_i \in C$ or $\exists t_i'. t_i \to t_i'$.
 If $t_i \to t_i'$ for some i then we can step by S-Set1.
-Otherwise all $t_i$s are on cannonball form and we have two
+Otherwise all $t_i$s are on canonical form and we have two
 subcases.
 
 By canonical form, lemma~\ref{lemma:equalityProgress},
@@ -661,9 +697,9 @@ element is not unique, and S-SetS otherwise.
 
 By IH on $\T_1$ and $\T_2$, either one of them can take a step,
 which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$
-are on cannonball form.
+are on canonical form.
 
-By cannonball form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
+By canonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
 $\T_2$ and $\E$ we know that $t_1 = t_2$ steps to either $\strue$
 or $\sfalse$.
 
@@ -755,12 +791,12 @@ Then progress tells us that $t'$ is not stuck.
 Preservation tells us that $t'$ has the same type as $t$, 
 and by induction it does not get stuck either.
 
-\begin{lemma}[Termination] $ $
-  \label{lemma:termination}
-
-Except for terms containing $\s{rec}$, all well typed terms 
-evaluate to a cannonical form.
-\end{lemma}
+%\begin{lemma}[Termination] $ $
+%  \label{lemma:termination}
+%Except for terms containing $\s{rec}$, all well typed terms 
+%evaluate to a cannonical form.
+%\end{lemma}
+% Determinism in chosing evaluation rules
 
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
