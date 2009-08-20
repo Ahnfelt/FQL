@@ -14,7 +14,6 @@
 \usepackage[top=3cm, bottom=3cm, left=3.5cm, right=3.5cm]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{listings}
 \hyphenation{where}
 
 % Messy redefinition of caption font -
@@ -267,8 +266,7 @@ c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
 p.t \pipe \ssetc{c_1,\ldots,c_n}
 \end{eqnarray*}
 
-
-The canonical form for sets are non part of our abstract syntax. This
+ The canonical form for sets are non part of our abstract syntax. This
 is because we would like to keep an invariant that canonical sets
 do not have duplicates with respect to the equality operator '$\s{=}$'.
 
@@ -320,13 +318,17 @@ Then we can define the rule for application
 \rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
 \]
 
-Rules for equality of terms is only defined for terms of canonical forms. The interesting rules are the rules for the equality of sets. As sets are defined for all canonical terms $c$ we are able to have function terms $\lambda p.t$ in a set. If we define equality for sets, we either need to define equality for these terms or we need to exclude them from the sets. We then have two options:
-\begin{enumerate}
-\item terms $\lambda p.t$ are included in the sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal, so either we would need some kind of identifier to determine equality or we need to define a static result of applying equality to functions i.e. true or false. The first solution will make similar functions appear unsimilar because they have different identifiers, thereby introducing the possibility of similar functions in a set and thereby conflicting with the mathematical definition of sets. The second solution have similar problems i.g. that if we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we again break the definition of the mathematical set.
+In order to test membership against a set, compare them and to ensure the uniqueness property we need some flavor of equality defined on all possible element values. By the grammar this include all terms. It is however hard to define a reasonable semantic for equality on functions. We are now left with two options. Use a non reasonable semantic for equality on functions or exclude functions at allowed values in sets. Let dig deeper into these two cases.
 
-\item We define sets to contain terms $c'$ where $c' ::= c \setminus \lambda p.t$ in which case we can define a \emph{canonical set} $\ssetc{c_1,\ldots,c_n}$ to only contain terms $c'$. By doing this we put a narrow restriction on the set type in exchange of preserving the properties of a mathematical set.
+\begin{enumerate}
+\item Terms $\lambda p.t$ are allowed in sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal in behavior. A solution would be to distinguish functions by some kind of identifier reflecting where they where constructed. This however would break the central functional property of referential transparency. We could also simply define a static result of applying equality to functions i.e. true or false. If we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we allow duplicates in the set. 
+
+\item We do not define equality on functions and make the type system discard any term in which an attempt is made to compare functions. By doing this we put a restriction on the set type to exclude functions in exchange of preserving the properties of a mathematical set.
 \end{enumerate}
-By choosing option two we define equality as:
+
+Even thou we would vary mush like to allow functions in sets, it seems not possible to archive this without sacrificing too much. We there by chose to disallow this. For this reason there will be no semantic rule for lambda equality.
+
+
 \[\begin{array}{c}
 \rule[S-EqTT]{}{\strue = \strue \step \strue}
 \quad
@@ -358,9 +360,13 @@ By choosing option two we define equality as:
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
 \end{array}\]
 
-In the following we present the semantic rules for set terms. The rule S-SetC is used to construct a canonical set from a semi-canonical set by deterministically reducing the set using rules S-SetR and S-SetS. We preserve the termination property by the rule S-SetC.
+In the following we present the semantic rules for set terms. We have chosen to keep canonical sets unique in the semantic to ease the writing of all the set rules. Seen in the mirror, this has probably let to more rules than necessary. As long as no deconstructor can observe duplicates in a set, it should be fine to allow duplicates in the semantic.
 
-We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set. As the sets are defined as mathematical sets, we do not provide any guarantees as to where the member is located in the set and again, the termination property is preserved by rule S-SetPickN. To provide a fail-safe semantic for the pick rules, we define the rule by using an \emph{option}-like construction to make it syntax driven.
+Some premises or choses of what is stepped to may seem a little odd, chosen that way to preserve determinism and termination. This is the case for the second premise of S-SetS. Without this S-SetS could be chosen instead of S-SetC and a set could step into it self breaking the termination guarantee. The S-SetDF union up singleton sets to archive determinism in way the rule are used. The same apply for S-Set1.
+
+We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a canonical set. Because our language does not have any way to express errors we chose a construct that is exhaustive in contrast to fail in the case where the set is empty.
+
+
 
 \[\begin{array}{c}
 \rule[S-Set1]{t_m \step t'_m}{\{c_1,\ldots,c_{m-1},t_m,\ldots,t_n\} \step \{c_1,\ldots,c_{m-1},t'_m,\ldots,t_n\} }
@@ -394,7 +400,7 @@ We define rules S-SetPickS and S-SetPickN to pick a member from a canonical set.
 \quad\\\\
 \rule[S-SetDT]{c_1 = c'_j \step \strue}
 {\ssetc{c_1,\ldots,c_n} \setminus \ssetc{c'_1,\ldots,c'_j,\ldots,c'_m} \step
-  \sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_{j-1},c'_{j+1},\ldots,c'_m}
+  \sset{c_2,\ldots,c_n} \setminus \sset{c'_1,\ldots,c'_j,\ldots,c'_m}
 }
 \quad\\\\
 \rule[S-SetDF]{\forall j \in \dotset{1}{m} c_1 = c'_j \step \sfalse}
@@ -737,6 +743,25 @@ Proof: By induction on derivation $\S$.
 %\item Case $\S$ =
 %\end{itemize}
 
+\begin{lemma}[Soundness] $ $
+  \label{lemma:soundness}
+
+If $[] \vdash t : \tau$ then the evaluation of $t$ does not get 
+stuck.
+\end{lemma}
+
+Proof: Suppose that $t$ is a well typed term that steps to $t'$. 
+Then progress tells us that $t'$ is not stuck. 
+Preservation tells us that $t'$ has the same type as $t$, 
+and by induction it does not get stuck either.
+
+\begin{lemma}[Termination] $ $
+  \label{lemma:termination}
+
+Except for terms containing $\s{rec}$, all well typed terms 
+evaluate to a cannonical form.
+\end{lemma}
+
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
   
@@ -746,7 +771,8 @@ Proof: By induction on derivation $\S$.
 To show that FQL satisfies the principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$.
 \begin{eqnarray*}
 \sn &:& \sint\\
-\strue \vee \sfalse &:& \sbool\\
+\strue &:& \sbool\\
+\sfalse &:& \sbool\\
 x &:& \alpha \quad(\text{By T-Var})\\
 t_1 + t_2 &:& \sint \quad(\text{By T-Int})\\
 t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
@@ -755,9 +781,9 @@ t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
 \lambda p.t &:& \alpha_p \to \alpha_t \quad(\text{By T-Lam})\\
 t_1t_2 &:& \alpha \quad(\text{By induction on derivation of T-App})\\
 \sletin{x=t_1}{t_2} &:& \alpha_{t_2} \quad(\text{By T-Let and constraint }\alpha_{t_2} = \alpha_{let})\\
-rec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
+\srec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
 \sLb t^{,*} \sRb &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
-t_1 \cup t_2 &:& Set \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
+t_1 \cup t_2 &:& \sseta \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
 \end{eqnarray*}
 For every term $t$ we can now derive all the possible types for that term from the type given in the above list.
 
@@ -767,7 +793,7 @@ For every term $t$ we can now derive all the possible types for that term from t
 \section{Implementation}
 \label{appendix:implementation}
 
-\lstinputlisting{../code/inference.hs}
+\verbatiminput{../code/inference.hs}
 
 \end{appendices}
 
