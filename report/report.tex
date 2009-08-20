@@ -139,12 +139,12 @@ In section~\ref{sec:semantics} we give an operational small-step semantic for FQ
 After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W\cite{milner78}. Section~\ref{sec:proofs} contains a somewhat non-exhaustive collection of proofs necessary to show desirable properties of our type system.
 
 We will argue that a principle type exists, is unique and is found by our inference algorithm, but we will not cover the correctness of this algorithm in general.
-To test the feasability we have implemented the type reconstruction alogrithm in Haskell, and the code is listed in appendix~\ref{appendix:implementation}.
+To test the feasibility we have implemented the type reconstruction algorithm in Haskell, and the code is listed in appendix~\ref{appendix:implementation}.
 
 \section{Syntax}
 \label{sec:syntax}
 
-It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from different sets in a convenient way. We have chosen to use the form suggested in the paper with some minor modifications. However instead of incorporating this feature directly into our language we have chosen to archive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}.
+It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from different sets in a convenient way. We have chosen to use the form suggested in the paper with some minor modifications. However instead of incorporating this feature directly into our language we have chosen to archive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the syntax of the core language which we call the \buzz{abstract syntax}.
 
 The advantage of this approach is that our core language is smaller and thereby easier to formalize and implement. A disadvantage is that the behavior and correctness of the extended language now lies in the conversion function which may be harder to reason about. Another more practical implication could be that concise error reporting would be hard to implement.
 
@@ -162,7 +162,7 @@ t_2) \pipe \lambda p.t \pipe t_1 t_2 \pipe \sletin{x \seq t_1}{t_2}
 & & \pipe t_1 \cup t_2 \pipe t_1 \cap t_2 \pipe t_1 \setminus t_2 \pipe t_1 \in t_2
 \end{eqnarray*}
 
-The notion $t_1,\ldots,t_n$ generally means, a comma seperated
+The notion $t_1,\ldots,t_n$ generally means, a comma separated
 sequence of zero or more possibly different terms. This syntax here
 only allows pairs and not $n$-ary tuples. It would however be possible
 to archive tuples as iterated pairs implemented as syntactic
