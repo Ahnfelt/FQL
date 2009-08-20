@@ -425,14 +425,32 @@ We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a can
 \end{array}\]
 
 
-With the \code{pick} construct in place, we can now define the aggregation function \code{reduce} as:
+\subsection{Samples}
+
+The \code{pick} construct is the only deconstructor on set which give access to the elements. But with this in place, we can define new functions like \code{map} and\code{reduce}. 
+
 \[\begin{array}{l}
 \srec \  reduce.\ \lambda f.\ \lambda z.\ \lambda s.\\
 \quad \s{pick} \ s \\
 \quad\quad \s{some} (e,r) = reduce \ f \ (f \  z \  e)\ r\\
 \quad\quad \s{none} = z
 \end{array}\]
-We can also define fixed point queries by general recursion and set comprehension as:
+
+As shown in the paper \code{reduce} may be seen as a aggregate constructor e.g given the plus function it returns the sum function. Since the order in which \code{reduce} vitits the elements is not specified, it only make sence to give \code{reduce} a associative function.
+
+\[\begin{array}{l}
+\srec \  map.\ \lambda f.\ \lambda s.\\
+...
+\end{array}\]
+
+\[\begin{array}{l}
+\srec \  filter.\ \lambda f.\ \lambda s.\\
+...
+\end{array}\]
+
+
+The fix-point construct as suggested in the paper can also be defined using higher order functions. We can also construct fixed point queries by general recursion and set comprehension as:
+
 \[\begin{array}{l}
 \lambda f.\ \srec fix'.\ \lambda s.\\
 \quad\quad\sletin{e = f\ s}{\sif e \setminus s = \{\} \sthen s \selse fix'\ (e \cup s)} \\
