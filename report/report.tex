@@ -123,6 +123,7 @@
 \begin{document}
 \parindent=0pt
 \parskip=8pt plus 2pt minus 4pt
+\includegraphics[angle=0,width=1\textwidth]{../front}
 \maketitle
 
 \begin{abstract}\noindent
@@ -132,15 +133,15 @@ A task has been assigned by an ERP systems vendor to formulate a functional lang
 
 \section{Introduction}
 
-FQL in it's core is a simply typed lambda calculus with monomorphic recursion and support for polymorphic let bindings. The language has integers and booleans as primitive types, and pairs and sets as build-in structural types. The language is implicitly typed and makes use of type reconstruction to infer types and statically guarantee type safety. 
+FQL in it's core is a simply typed lambda calculus with monomorphic recursion and support for polymorphic let bindings. The language has integers and booleans as primitive types, and pairs and sets as build-in structural types. The language is implicitly typed and makes use of type reconstruction to infer types and statically guarantee type safety.
 So despite a slightly different syntax and sets instead of lists, FQL is very similar to the core of ML.
 
 The next section covers the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
 
-In section~\ref{sec:semantics} we give an operational small-step semantic for FQL and address some problems regarding the semantic for sets. 
+In section~\ref{sec:semantics} we give an operational small-step semantic for FQL and address some problems regarding the semantic for sets.
 After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a somewhat non-exhaustive collection of proofs necessary to show desirable properties of our type system.
 
-We will argue that a principle type exists, is unique and is found by our inference algorithm, but we will not cover the correctness of this algorithm in general. 
+We will argue that a principle type exists, is unique and is found by our inference algorithm, but we will not cover the correctness of this algorithm in general.
 To test the feasability we have implemented the type reconstruction alogrithm in Haskell, and the code is listed in appendix~\ref{appendix:implementation}.
 
 \section{Syntax}
@@ -252,7 +253,7 @@ $x'$ is the fresh variable that replaced it in the pattern.
 
 \section{Examples}
 
-The \code{pick} construct is the only deconstructor on sets which give access to the elements. 
+The \code{pick} construct is the only deconstructor on sets which give access to the elements.
 By using it, we can define new functions like \code{map} and \code{reduce}.
 The \code{reduce} function can be specified as:
 
@@ -263,10 +264,10 @@ The \code{reduce} function can be specified as:
 \quad\quad \s{none} = z
 \end{array}\]
 
-As shown in the paper \code{reduce} may be seen as a aggregate 
-constructor. Given the plus function it returns the sum 
-function. Since the order in which \code{reduce} visits the 
-elements is not specified, it only make sense to give 
+As shown in the paper \code{reduce} may be seen as a aggregate
+constructor. Given the plus function it returns the sum
+function. Since the order in which \code{reduce} visits the
+elements is not specified, it only make sense to give
 \code{reduce} an associative function.
 The \code{map} function can be specified as:
 
@@ -393,7 +394,7 @@ Then we can define the rule for application
 In order to test membership against a set, compare them and to ensure the uniqueness property we need some flavor of equality defined on all possible element values. By the grammar this include all terms. It is however hard to define a reasonable semantic for equality on functions. We are now left with two options. Use a non reasonable semantic for equality on functions or exclude functions at allowed values in sets. Let dig deeper into these two cases.
 
 \begin{enumerate}
-\item Terms $\lambda p.t$ are allowed in sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal in behavior. A solution would be to distinguish functions by some kind of identifier reflecting where they where constructed. This however would break the central functional property of referential transparency. We could also simply define a static result of applying equality to functions i.e. true or false. If we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we allow duplicates in the set. 
+\item Terms $\lambda p.t$ are allowed in sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal in behavior. A solution would be to distinguish functions by some kind of identifier reflecting where they where constructed. This however would break the central functional property of referential transparency. We could also simply define a static result of applying equality to functions i.e. true or false. If we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we allow duplicates in the set.
 
 \item We do not define equality on functions and make the type system discard any term in which an attempt is made to compare functions. By doing this we put a restriction on the set type to exclude functions in exchange of preserving the properties of a mathematical set.
 \end{enumerate}
@@ -654,9 +655,7 @@ generated by the TP rules on the fly.
 \label{syntacticProperties}
 \label{sec:proofs}
 
-Principal type property:
-
-We use $t \in C$ here to express that t is on canonical form.
+We use $t \in C$ here to express that $t$ is in canonical form.
 
 \begin{lemma}[Progress]
 \label{lemma:progress}
@@ -790,26 +789,28 @@ Proof: By induction on derivation $\S$.
 \begin{lemma}[Soundness] $ $
   \label{lemma:soundness}
 
-If $[] \vdash t : \tau$ then the evaluation of $t$ does not get 
+If $[] \vdash t : \tau$ then the evaluation of $t$ does not get
 stuck.
 \end{lemma}
 
-Proof: Suppose that $t$ is a well typed term that steps to $t'$. 
-Then progress tells us that $t'$ is not stuck. 
-Preservation tells us that $t'$ has the same type as $t$, 
+Proof: Suppose that $t$ is a well typed term that steps to $t'$.
+Then progress tells us that $t'$ is not stuck.
+Preservation tells us that $t'$ has the same type as $t$,
 and by induction it does not get stuck either.
 
 %\begin{lemma}[Termination] $ $
 %  \label{lemma:termination}
-%Except for terms containing $\s{rec}$, all well typed terms 
+%Except for terms containing $\s{rec}$, all well typed terms
 %evaluate to a cannonical form.
 %\end{lemma}
 % Determinism in chosing evaluation rules
 
 \begin{lemma}[Principal types] $ $
   \label{lemma:principalTypes}
-  FQL satifies the principal type property.
+
+  $\text{FQL satifies the principal type property.}$
 \end{lemma}
+
 To show that FQL satisfies the principal property, we need to show that every term $t$ has a most general type $\tau_g$ for which all other types $\tau'$ for that term can be reduced to $\tau_g$. To show that this property holds for FQL we will try to find a most general type for every term in $t$.
 \begin{eqnarray*}
 \sn &:& \sint\\
@@ -832,8 +833,6 @@ For every term $t$ we can now derive all the possible types for that term from t
 
 \newpage
 \begin{appendices}
-
-
 \section{Implementation}
 \label{appendix:implementation}
 
