@@ -126,20 +126,17 @@
 \includegraphics[angle=0,width=1\textwidth]{../front}
 \maketitle
 
-\begin{abstract}\noindent
-A task has been assigned by an ERP systems vendor to formulate a functional language with embedded query constructs intended to extract data from the existing ERP system. The language is to be used as an abstraction between the ERP system and the relational database and must provide type safety in its core as well as in it's query constructs by using a static type system. The core language is required to have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions. In response to this request we present the language FQL.
-\end{abstract}
-
-
 \section{Introduction}
 
-FQL in it's core is a simply typed lambda calculus with monomorphic recursion and support for polymorphic let bindings. The language has integers and booleans as primitive types, and pairs and sets as build-in structural types. The language is implicitly typed and makes use of type reconstruction to infer types and statically guarantee type safety.
+A task has been assigned by an ERP systems vendor to formulate a functional language with embedded query constructs intended to extract data from relational databases. The language must provide type safety in its core as well as in it's query constructs by using a static type system. The core language is required to have tuples and sets as built-in data types, be parametrically polymorphic and include higher-order functions. In response to this request we present the language FQL.
+
+FQL in it's core is a simply typed lambda calculus with monomorphic recursion and support for polymorphic let bindings. The language has integers and booleans as primitive types, and pairs and sets as built-in structural types. The language is implicitly typed and makes use of type reconstruction to infer types and statically guarantee type safety.
 So despite a slightly different syntax and sets instead of lists, FQL is very similar to the core of ML.
 
-The next section covers the syntax of FQL. We distinguish  between abstract and concrete syntax. The abstract syntax define well-formedness of the core language for which we later define a formal semantic. The concrete syntax extends this by defining syntactic sugar for set comprehension.
+The next section covers the syntax of FQL. We distinguish between abstract and concrete syntax where the abstract syntax defines well-formedness of the core language for which we later define a formal semantic and a type system. The concrete syntax extends this by defining syntactic sugar for set comprehension.
 
 In section~\ref{sec:semantics} we give an operational small-step semantic for FQL and address some problems regarding the semantic for sets.
-After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W. Section~\ref{sec:proofs} contains a somewhat non-exhaustive collection of proofs necessary to show desirable properties of our type system.
+After this we present our type system and show how this can be formalized in a way suitable for type inference with algorithm W\cite{milner78}. Section~\ref{sec:proofs} contains a somewhat non-exhaustive collection of proofs necessary to show desirable properties of our type system.
 
 We will argue that a principle type exists, is unique and is found by our inference algorithm, but we will not cover the correctness of this algorithm in general.
 To test the feasability we have implemented the type reconstruction alogrithm in Haskell, and the code is listed in appendix~\ref{appendix:implementation}.
@@ -149,7 +146,7 @@ To test the feasability we have implemented the type reconstruction alogrithm in
 
 It was essential that a proposed language had a form of set comprehension allowing the programmer to join, constraint and filter elements from different sets in a convenient way. We have chosen to use the form suggested in the paper with some minor modifications. However instead of incorporating this feature directly into our language we have chosen to archive this by defining a syntactic sugar shell which we name \buzz{concrete syntax}. We will soon show how well-formed concrete syntax can be converted into the the syntax of the core language which we call the \buzz{abstract syntax}.
 
-The advantage of this approach is that our core language are smaller and thereby easier to formalize, proof, and implement. A disadvantage is that the behavior and correctness of the extended language now lies in the conversion function which may be hard to analyze. Another more practical implication could be that concise error reporting would be hard to implement.
+The advantage of this approach is that our core language is smaller and thereby easier to formalize and implement. A disadvantage is that the behavior and correctness of the extended language now lies in the conversion function which may be harder to reason about. Another more practical implication could be that concise error reporting would be hard to implement.
 
 \subsection{Abstract syntax}
 \label{abstractSyntax}
@@ -165,11 +162,12 @@ t_2) \pipe \lambda p.t \pipe t_1 t_2 \pipe \sletin{x \seq t_1}{t_2}
 & & \pipe t_1 \cup t_2 \pipe t_1 \cap t_2 \pipe t_1 \setminus t_2 \pipe t_1 \in t_2
 \end{eqnarray*}
 
-The notion $t_1,\ldots,t_n$ generally means that $n$ may be $0$ which
-makes this syntactic sequence empty. This allows in this case the
-empty set. This syntax here only allow support for pairs and not
-tuples. It would however be possible to archive tuples as iterated
-pairs implemented as syntactic sugar. The lambda abstraction uses a pattern $p$ for binding variable and deconstruct pairs. Patterns are defined by
+The notion $t_1,\ldots,t_n$ generally means, a comma seperated
+sequence of zero or more possibly different terms. This syntax here
+only allows pairs and not $n$-ary tuples. It would however be possible
+to archive tuples as iterated pairs implemented as syntactic
+sugar. The lambda abstraction uses a pattern $p$ for binding variables
+and deconstructing pairs. Patterns are defined by 
 
 \begin{eqnarray*}
 p & ::= &  x \pipe (p, p)
@@ -215,11 +213,11 @@ $\sug{t}$:
 
 
 In summary, we take the cross product of the input sets, pass it
-through the well known filter function to apply the predicate,
+through the filter function to apply the predicate,
 and map it with the output function. We generate one big pattern
 based on the patterns to the left of the input sets and use it as
 the pattern for the predicate and output functions, thus binding
-the values to the names as intended. We will show later how $\s{map}$, $\s{filter}$ and $\s{\times}$ can be defined in out core language.
+the values to the names as intended. We will show later how $\s{map}$, $\s{filter}$ and $\s{\times}$ can be defined in our core language.
 
 An example of the concrete syntax is
 \begin{verbatim}
@@ -233,7 +231,7 @@ which is translated to the abstract syntax
 &&\quad(\s{filter\ } (\lambda ((name, accountnr), (accountnr', amount)). accountnr = accountnr')\\
 &&\quad(owners \times accounts))
 \end{eqnarray*}
-This may be expressed more succinctly as
+A shorthand for the example above may be expressed more succinctly as 
 \begin{verbatim}
 {(name, amount) : (name, accountnr) in owners,
                   (accountnr, amount) in accounts}
@@ -241,7 +239,7 @@ This may be expressed more succinctly as
 Note that $accountnr$ is used twice here. The intention is that
 both places in the pattern must match the same value
 simultaneously, and the resulting abstract syntax is the same as
-in the previous example. This can be implemented as syntactic sugar
+in the previous example. This can be implemented 
 by keeping track of which variables have been used before in the
 set comprehension. In case a variable $x$ is encountered again in a
 pattern, replace that occurrence with a fresh variable $x'$ and add
@@ -333,12 +331,14 @@ c & ::= & \sn \pipe \strue \pipe \sfalse \pipe (c_1, c_2) \pipe \lambda
 p.t \pipe \ssetc{c_1,\ldots,c_n}
 \end{eqnarray*}
 
- The canonical form for sets are non part of our abstract syntax. This
+The canonical form for sets indicated by the $\surd$, are not part of our abstract syntax. This
 is because we would like to keep an invariant that canonical sets
 do not have duplicates with respect to the equality operator '$\s{=}$'.
 
 
-We are now ready to rule for all constructs in $t$. The binary relation $\oplus$ covers the stepping rules for $= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
+We are now ready to specify rules for all constructs in $t$. The
+symbol $\oplus$ is a placeholder for the binary relation operators
+$= ,+,\cup, \cap,\setminus,\in$, application and the pair construct.
 
 \[\begin{array}{c}
 \rule[S-Step1]{t_1 \step t_1'}{t_1 \oplus t_2 \step t_1' \oplus t_2}\quad
@@ -385,7 +385,7 @@ Then we can define the rule for application
 \rule[S-App]{\angled{p, c} \stepsub S}{(\lambda p.t) c \step S(t)}
 \]
 
-In order to test membership against a set, compare them and to ensure the uniqueness property we need some flavor of equality defined on all possible element values. By the grammar this include all terms. It is however hard to define a reasonable semantic for equality on functions. We are now left with two options. Use a non reasonable semantic for equality on functions or exclude functions at allowed values in sets. Let dig deeper into these two cases.
+In order to test membership against a set, to compare them and to ensure the uniqueness property we need some flavor of equality defined on all possible element values. By the grammar this include all terms. It is however hard to define a reasonable semantic for equality on functions. We are now left with two options. Use a non reasonable semantic for equality on functions or exclude functions as allowed values in sets. Let dig deeper into these two cases.
 
 \begin{enumerate}
 \item Terms $\lambda p.t$ are allowed in sets and thus we need to define equality rules for these terms. It is however not possible to determine if two functions are equal in behavior. A solution would be to distinguish functions by some kind of identifier reflecting where they where constructed. This however would break the central functional property of referential transparency. We could also simply define a static result of applying equality to functions i.e. true or false. If we define all functions to be equal, only one function can be present in a set and if we define all functions to be unequal, we allow duplicates in the set.
@@ -393,7 +393,7 @@ In order to test membership against a set, compare them and to ensure the unique
 \item We do not define equality on functions and make the type system discard any term in which an attempt is made to compare functions. By doing this we put a restriction on the set type to exclude functions in exchange of preserving the properties of a mathematical set.
 \end{enumerate}
 
-Even thou we would vary mush like to allow functions in sets, it seems not possible to archive this without sacrificing too much. We there by chose to disallow this. For this reason there will be no semantic rule for lambda equality.
+Even though we would like to allow functions in sets, it does not seem possible to archive this without sacrificing too much. We therefore choose to disallow this. For this reason there will be no semantic rule for lambda equality.
 
 
 \[\begin{array}{c}
@@ -427,11 +427,9 @@ Even thou we would vary mush like to allow functions in sets, it seems not possi
   {\ssetc{c_1,\ldots,c_n} = \ssetc{c'_1,\ldots,c'_n} \step \sfalse}(i \in \{1,\ldots,n\})
 \end{array}\]
 
-In the following we present the semantic rules for set terms. We have chosen to keep canonical sets unique in the semantic to ease the writing of all the set rules. Seen in the mirror, this has probably let to more rules than necessary. As long as no deconstructor can observe duplicates in a set, it should be fine to allow duplicates in the semantic.
-
-Some premises or choses of what is stepped to may seem a little odd, chosen that way to preserve determinism and termination. This is the case for the second premise of S-SetS. Without this S-SetS could be chosen instead of S-SetC and a set could step into it self breaking the termination guarantee. The S-SetDF union up singleton sets to archive determinism in way the rule are used. The same apply for S-Set1.
-
-We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a canonical set. Because our language does not have any way to express errors we chose a construct that is exhaustive in contrast to fail in the case where the set is empty.
+In the following we present the semantic rules for set terms. We have
+chosen to keep canonical sets unique in the semantic to ease the
+writing of all the set rules. In retrospect, this has probably led to more rules than necessary. As long as no deconstructor can observe duplicates in a set, it should be fine to allow duplicates in the semantic.
 
 
 
@@ -447,11 +445,22 @@ We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a can
 \rule[S-SetS]{\forall i \in \dotset{2}{n}. c_1 = c_i \step \sfalse
 \quad c_j = c_k \step \strue}
 {\sset{c_1,\ldots,c_n} \step \sset{c_2,\ldots,c_n,c_1}}(j,k \in \dotset{1}{n}, j\neq k)
-\quad\\\\
-\rule[S-SetIn1]{}{t_1\in t_2 \step t_1'\in t_2}
-\quad
-\rule[S-SetIn2]{}{c\in t \step c\in t'}
-\quad\\\\
+\end{array}\]
+
+Some premises or choices of what is stepped to may seem a little odd,
+but have been
+chosen that way to preserve determinism in applicable rules for a
+given term and termination for all non recursive terms. This is the
+case for the second premise of S-SetS. Without this S-SetS could be
+chosen instead of S-SetC and a set could step into it self breaking
+the termination guarantee. 
+
+
+\[\begin{array}{c}
+%\rule[S-SetIn1]{}{t_1\in t_2 \step t_1'\in t_2}
+%\quad
+%\rule[S-SetIn2]{}{c\in t \step c\in t'}
+%\quad\\\\
 \rule[S-SetInT]{c=c_i \step \strue}{c\in \ssetc{c_1,\ldots,c_n} \step \strue}(i \in \dotset{1}{n})
 \quad
 \rule[S-SetInF]{\forall i\in\{1,\ldots,n\}. c=c_i \step \sfalse}{c_m \in \ssetc{c_1,\ldots,c_n} \step \sfalse}
@@ -461,7 +470,14 @@ We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a can
 \rule[S-SetPickN]{}{\spick{\ssetc{}}{(x_1,x_2) = t_1}{t_2} \step t_2}
 \quad\\\\
 \rule[S-SetPickS]{}{\spick{\ssetc{c_1,\ldots,c_n}}{(x_1,x_2) = t_1}{t_2} \step \sletin{x_1 = c_i}{(\sletin{x_2 = \sset{c_1,\ldots,c_n}\setminus\sset{c_i}}{t_1}})}
-\quad\\\\
+\end{array}\]
+
+We define rules S-SetPickS and S-SetPickN to pick an arbitrary member
+from a canonical set. Because our language does not have any way to
+express errors we chose a construct that is exhaustive in contrast to
+construct that fails in the case where the set is empty.
+
+\[\begin{array}{c}
 \rule[S-SetU]{}{\ssetc{c_1,\ldots,c_m} \cup \ssetc{c_{m+1},\ldots,c_n} \step
 \{c_1,\ldots,c_m,c_{m+1},\ldots,c_n\}}
 \quad\\\\
@@ -498,12 +514,18 @@ We define rules S-SetPickS and S-SetPickN to pick an arbitrary member from a can
 Types in FQL are defined by
 \begin{eqnarray*}
 \tau &::=& \sbool \pipe \sint \pipe \tau \to \tau \pipe \tau \times \tau \pipe \sseta \tau \pipe \alpha\\
+\end{eqnarray*}
+
+Type schemes $\sigma$ only occur in the type environment and are
+defined by. 
+\begin{eqnarray*}
 \sigma &::=& \forall \alpha. \sigma \pipe \tau
 \end{eqnarray*}
-As discussed in section \ref{sec:semantics} we have to make sure
-that every element in a set can be compared for equality. We define
-a class of types that support this by the judgement
-\smbox{\tau \in EQ}
+
+As discussed in section \ref{sec:semantics}, the type system should
+prevent functions from being compared for equality. We define
+a class of types that support this by the judgement 
+\smbox{\tau \in EQ}, similar to what is done in ML.
 \[\begin{array}{c}
 \rule[EQ-Int]{}{\sint \in EQ}\quad
 \rule[EQ-Bool]{}{\sbool \in EQ}\quad\\\\
@@ -511,9 +533,17 @@ a class of types that support this by the judgement
 \rule[EQ-Pair]{\tau_1 \in EQ \quad \tau_2 \in EQ}{\tau_1 \times \tau_2 \in EQ}
 \end{array}\]
 
-We can then define the typing judgement
-\smbox{\Gamma \vdash t : \tau}
-and then formulate a syntax-oriented type system with constraint generation as side effects \cite{Heeren02generalizinghindley-milner, Henglein89polymorphictype}. We use side constraints to seperate the constraint generation from constraint solving because the constraint solution is independant of where the constrints come from \cite{henglein94fund-type-inf-sys}.
+We can then define the typing judgement of the form
+\smbox{\Gamma \vdash t : \tau}. Instead of using the standard notion
+with concrete type, we will use type variables and put constraints on
+them as side conditions. This is convenient for implementing a
+constraint generator for type reconstruction. 
+
+Instead of have speperate rule for scheme generation and
+instantiation, we will incorporate this only where necessary which is
+in T-Let and T-Var \cite{henglein94fund-type-inf-sys}.
+
+%and then formulate a syntax-oriented type system with constraint generation as side effects \cite{Heeren02generalizinghindley-milner, Henglein89polymorphictype}. We use side constraints to seperate the constraint generation from constraint solving because the constraint solution is independant of where the constrints come from \cite{henglein94fund-type-inf-sys}.
 
 %The constraints are generated by rules T-App, T-Rec, T-Let, TP-Pair and T-Lam.
 
@@ -550,6 +580,11 @@ and then formulate a syntax-oriented type system with constraint generation as s
 \rule[T-Rec]{\Gamma[x \mapsto \alpha_x] \vdash t : \alpha_t}
 {\Gamma\vdash \srec x. t : \alpha_{rec}} (\alpha_x = \alpha_t \wedge \alpha_x = \alpha_{rec})
 \\\\
+\rule[T-Var]{}
+{\Gamma[x \mapsto \forall\vec{\alpha}.\tau']\vdash x : \alpha_x}
+(\alpha_x = [\vec{\alpha} \mapsto \vec{\alpha'}](\tau'), \vec{\alpha'}
+\mbox{ is fresh})
+\\\\
 \rule[T-Let]{\Gamma \vdash t_1 : \alpha_{t_1}
 \quad \Gamma[x \mapsto \alpha_x] \vdash t_2 : \alpha_{t_2}}
 {\Gamma\vdash \sletin{x = t_1}{t_2} : \alpha_{let}} (\alpha_x = Close(\alpha_{t_1},\Gamma) \wedge \alpha_{t_2} = \alpha_{let})
@@ -575,7 +610,7 @@ The definition of the type rules for \emph{union}, $\in$ and \emph{Pick} is pret
 \quad \Gamma \vdash t_3 : \alpha_n}
 {\Gamma\vdash \spick{t_1}{(x_1,x_2) = t_2}{t_3} : \alpha_r}
 (\alpha_v = \sseta \alpha_{x_1} \wedge \alpha_{x_2} = \alpha_v
-\wedge \alpha_r = \alpha_p \wedge \alpha_p = \alpha_n)
+\wedge \alpha_r = \alpha_s \wedge \alpha_r = \alpha_n)
 \end{array}
 \]
 
@@ -588,15 +623,15 @@ Because every element of a set has to be an equality type we define the type inf
 (\alpha_s = \sseta \alpha_e \wedge \alpha_e \in EQ)
 \]
 
-We extract the bindings and the accepted type from the
-pattern, by the judgement \smbox{p \patbind \angled{\tau,\Gamma}}. This judgment creates an environment where the pattern $p$ maps to a type $\tau$. To be used in type constraints in the following, we map the type of $p$ to a type variable $\alpha_p$ for convenience.
+To extract the bindings and the accepted type from the
+pattern, we use the judgement \smbox{p \patbind \angled{\tau,\Gamma}} This judgment creates an environment where the pattern $p$ maps to a type $\tau$. To be used in type constraints in the following, we map the type of $p$ to a type variable $\alpha_p$ for convenience.
 \[
 \rule[TP-Var]{}{x \patbind \angled{\alpha_x,\{x \mapsto \alpha_x\}}}\quad
 \rule[TP-Pair]{p_1 \patbind \angled{\alpha_{p_1},\Gamma_1}\quad p_2 \patbind \angled{\alpha_{p_2},\Gamma_2}}
 {(p_1, p_2) \patbind \angled{\alpha_{pair},\Gamma_1\Gamma_2}}(\alpha_{pair} = \alpha_{p_1}\times\alpha_{p_2})
 \]
 
-The pattern judgment can now be used to extract the type of $p$ and the environment where $p$ maps to type $\alpha_p$ and evaluate the term $t$ in that environment.
+The pattern judgment can now be used to extract the type of $p$ in the environment where $p$ maps to type $\alpha_p$ and evaluate the term $t$ in that environment.
 \[
 \rule[T-Lam]{p \patbind \angled{\alpha_p,\Gamma_2} \quad\Gamma_1\Gamma_2 \vdash t : \alpha_t}{\Gamma_1 \vdash \lambda p.t : \alpha_{\lambda}} (\alpha_\lambda = \alpha_p \to \alpha_t)
 \]
@@ -604,12 +639,12 @@ The pattern judgment can now be used to extract the type of $p$ and the environm
 \subsection{Algorithm}
 \label{typeInference}
 
-The right part in parenthesis of each type rule can be interpreted
+The side condition to the right of each type rule can be interpreted
 as constraints. Since there is exactly one rule per syntactic
 construct, a straightforward traversal of the term by the rules
 will be the basis of our inference algorithm. Every time we
 encounter an $\alpha$ in the type rules, we generate a fresh type
-variable and add the equality constraints as indicaded. Ignoring
+variable and add the equality constraints as indicated. Ignoring
 polymorphism and EQ constraints, all that remains is to unify
 the equality constraints.
 
@@ -631,14 +666,15 @@ do not occur in $\Gamma$. Finally we bind $x$ to the type scheme
 and infer $e_2$ in the resulting environment.
 
 In the case of $x$, we simply look up $x$ in the type environment,
-which yields a type scheme $\forall \vec{\alpha}.\tau$. We
+which yields a type scheme $\forall \vec{\alpha}.\tau$. Note that
+$|\vec{\alpha}|$ might be $0$. We
 instantiate it by generating fresh type variables for each $\alpha$
 and replacing each of them in $\tau$.
 
 For every EQ constraint (the constraint that a type must be an
-equality type), the type can simply be insterted into a set.
-In the end, each element in the set can simply be checked
-structurally to ensure that it doesn't contain any function types.
+equality type), the type can be insterted into a set and in the
+end, each element in this set can simply be checked 
+structurally to ensure that it does not contain any function types.
 This amounts to a straightforward implementation of the EQ rules.
 
 A Haskell implementation of this algorithm can be found in appendix
@@ -662,7 +698,7 @@ Proof: By induction on $\T$ of $[]\vdash t:\tau$.
 \noteover{\te{x\mapsto\tau_1} t_2 : \tau_2}{\T_1}}
   {[] \vdash \slet x = t_1 \sletin t_2 : \tau_2}$
 
-By IH on $\T_0$ either $t_2$ is canonical or $t_1 \step t_1'$. If
+By IH on $\T_0$ either $t_1$ is canonical or $t_1 \step t_1'$. If
 $t_1 \step t_1'$ then $\T$ can step using the S-Let1-rule. If $t=v$
 then $\T$ can step using S-Let.
 
@@ -698,7 +734,7 @@ element is not unique, and S-SetS otherwise.
 
 By IH on $\T_1$ and $\T_2$, either one of them can take a step,
 which means we can use S-Step1 or S-Step2, or both $t_1$ and $t_2$
-are on canonical form.
+are in canonical form.
 
 By canonical form, lemma~\ref{lemma:equalityProgress}, $\T_1$,
 $\T_2$ and $\E$ we know that $t_1 = t_2$ steps to either $\strue$
@@ -731,7 +767,7 @@ Proof: By induction on the structure of $c_1$
 \begin{itemize}
 \item Case $c_1 = n$
 
-Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ and S-EqNF to prove $c_1 = c_2 \step \sfalse$
+Since $c_1 = n$, $\tau$ must be the type $\sbool$ and $c_2$ must be either $\strue$ or $\sfalse$. We can therefore either use S-EqNT to prove $c_1 = c_2 \step \strue$ or S-EqNF to prove $c_1 = c_2 \step \sfalse$
 
 \item Case $c_1 = true$
 
@@ -739,11 +775,19 @@ We must have $\tau = \sbool$ and $c_2 = \strue$ or $c_2 = \sfalse$. Rule S-EqTT 
 
 \item Case $c_1 = false$
 
-Similar to above.
+Similar to previous case.
 
 \item Case $c_1 = (c_1^l, c_l^r)$
 
-$\tau$ must be equal $\tau_l \times \tau_r$ where $[]\vdash c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l \times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$ and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$ or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree rules S-EqTup? can be used to prove our goal.
+$\tau$ must be equal to $\tau_l \times \tau_r$ where $[]\vdash
+c_1^l:\tau_l$ and $[]\vdash c_1^r:\tau_r$. $c_2$ must also have a pair
+value so $c_2 = (c_2^l, c_2^r)$ where as before $[]\vdash
+c_2^l:\tau_l$ and $[]\vdash c_2^r:\tau_r$. By EQ-Pair on $\tau_l
+\times \tau_r \in EQ$ we obtain $\tau_l \in EQ$ and $\tau_r \in
+EQ$. Now by IH on $[]\vdash c_1^l:\tau_l$, $[]\vdash c_2^l:\tau_rl$
+and $\tau_l \in EQ$ we have $c_1^l = c_2^l$ steps either to $\strue$
+or $\sfalse$ - and similar for $c_1^r = c_2^r$. Now one of the tree
+rules S-EqTup? can be used to prove our goal. 
 
 \item Case $c_1 = \ssetc{c'_1,\ldots,c'_n}$
 
@@ -775,7 +819,7 @@ Proof: By induction on the structure of $\T$.
 $\stackover{t \step t'}{\S} \quad \land \quad \stackover{[] \vdash t: \tau}{\T} \quad \im \quad [] \vdash t' : \tau$
 \end{lemma}
 
-Proof: By induction on derivation $\S$.
+Proof: By induction on derivation $\S$ or $\T$.
 %\begin{itemize}
 %\item Case $\S$ =
 %\end{itemize}
@@ -790,7 +834,8 @@ stuck.
 Proof: Suppose that $t$ is a well typed term that steps to $t'$.
 Then progress tells us that $t'$ is not stuck.
 Preservation tells us that $t'$ has the same type as $t$,
-and by induction it does not get stuck either.
+and by induction on the number of steps it does not get stuck
+and preserve its type.
 
 %\begin{lemma}[Termination] $ $
 %  \label{lemma:termination}
@@ -819,10 +864,16 @@ t_1 = t_2 &:& \sbool \quad(\text{By T-Eq})\\
 t_1t_2 &:& \alpha \quad(\text{By induction on derivation of T-App})\\
 \sletin{x=t_1}{t_2} &:& \alpha_{t_2} \quad(\text{By T-Let and constraint }\alpha_{t_2} = \alpha_{let})\\
 \srec x.t &:& \alpha_t \quad(\text{By T-Rec})\\
-\sLb t^{,*} \sRb &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
+\sset{t_1,\ldots,t_n} &:& \sset \alpha_t \wedge \alpha_t \in EQ \quad(\text{By T-Set})\\
 t_1 \cup t_2 &:& \sseta \alpha_{t_1} \quad(\text{By T-Union and the constraint }\alpha_{t_1} = \alpha_{t_2})
 \end{eqnarray*}
-For every term $t$ we can now derive all the possible types for that term from the type given in the above list.
+For every term $t$ we can now derive all the possible types for that
+term from the type given in the above list. Uniqueness could be shown
+by assuming existence of second principal type and then show that the
+two principal types would be identical.
+
+The principal type for a term may be found for a term by using a
+unification algorithm, as done in our implementation.
 
 
 \newpage
