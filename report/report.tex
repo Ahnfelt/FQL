@@ -288,6 +288,12 @@ The \code{flatten} function can be specified as:
 \quad reduce\ (\lambda l.\ \lambda r.\ l \cup r) \ \{\}\ s \\
 \end{array}\]
 
+The \code{cross} cartesian product can be specified as:
+\[\begin{array}{l}
+\lambda a.\ \lambda b.\\
+\quad flatten\ (map\ (\lambda x.\ map\ (\lambda y.\ (x, y))\ b)\ a) \\
+\end{array}\]
+
 The fix-point construct as suggested in the paper can also be defined using higher order functions. We can also construct fixed point queries by general recursion and set comprehension as:
 
 \[\begin{array}{l}
